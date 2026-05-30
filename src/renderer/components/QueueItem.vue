@@ -19,7 +19,22 @@ const emit = defineEmits<{
 
 const hovered = ref(false)
 const showError = ref(false)
+const rowEl = ref<HTMLElement | null>(null)
 const queueStore = useQueueStore()
+
+// true = popover opens below the row, false = above
+const popoverBelow = ref(false)
+
+function toggleError() {
+  if (!showError.value) {
+    // Measure before opening: if row top < 220px from scroll parent top, open below
+    const rect = rowEl.value?.getBoundingClientRect()
+    const parentRect = rowEl.value?.closest('.queue-scroll')?.getBoundingClientRect()
+    const topOffset = rect && parentRect ? rect.top - parentRect.top : (rect?.top ?? 300)
+    popoverBelow.value = topOffset < 220
+  }
+  showError.value = !showError.value
+}
 
 const indexStr = computed(() => String(props.index).padStart(3, '0'))
 
@@ -73,6 +88,7 @@ const errorDetails = computed(() => {
 
 <template>
   <div
+    ref="rowEl"
     class="queue-row"
     :class="{ hovered, selected }"
     @mouseenter="hovered = true"
@@ -120,7 +136,7 @@ const errorDetails = computed(() => {
     <StatusBadge
       :status="item.status"
       :clickable="item.status === 'failed'"
-      @click.stop="item.status === 'failed' && (showError = !showError)"
+      @click.stop="item.status === 'failed' && toggleError()"
     />
 
     <!-- Row actions (hover) -->
@@ -149,7 +165,7 @@ const errorDetails = computed(() => {
 
     <!-- Error popover -->
     <Transition name="err">
-      <div v-if="showError && item.status === 'failed'" class="error-popover" @click.stop>
+      <div v-if="showError && item.status === 'failed'" class="error-popover" :class="{ below: popoverBelow }" @click.stop>
         <div class="err-header">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -306,6 +322,12 @@ const errorDetails = computed(() => {
   bottom: calc(100% + 6px);
   right: 12px;
   z-index: 100;
+}
+.error-popover.below {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.error-popover {
   width: 320px;
   background: var(--bg-1);
   border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
