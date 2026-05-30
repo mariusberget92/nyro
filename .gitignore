@@ -3,3 +3,5 @@ out/
 dist/
 .DS_Store
 *.log
+# electron-store data (contains API keys, settings) — lives in OS userData, never in repo
+nyro-data.json
