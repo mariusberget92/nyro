@@ -27,7 +27,7 @@ export function getFFmpegPath(): string {
 export interface ConvertOptions {
   inputPath: string
   outputPath: string
-  bitrate?: '320' | '256' | '192' | '128'
+  bitrate?: string
   onProgress?: (percent: number) => void
   signal?: AbortSignal
 }

@@ -1,8 +1,11 @@
+export type AudioQuality = '64' | '96' | '128' | '160' | '192' | '256' | '320' | '384' | '448'
+
 export interface AppSettings {
   outputFolder: string
   numericPrefix: boolean
+  prefixTemplate: string
   concurrentDownloads: number
-  audioQuality: '320' | '256' | '192' | '128'
+  audioQuality: AudioQuality
   filenameFormat: 'artist-title' | 'title-artist' | 'title'
   fetchLyrics: boolean
   embedThumbnail: boolean
@@ -14,6 +17,7 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   outputFolder: '',
   numericPrefix: false,
+  prefixTemplate: '{000} - ',
   concurrentDownloads: 1,
   audioQuality: '320',
   filenameFormat: 'artist-title',

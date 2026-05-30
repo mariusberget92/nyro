@@ -27,18 +27,24 @@ export const IPC_CHANNELS = {
 } as const
 
 export const YOUTUBE_URL_PATTERNS = [
+  // YouTube
   /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtu\.be\/[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtube\.com\/playlist\?list=[\w-]+/,
-  /^(https?:\/\/)?(music\.)?youtube\.com\/watch\?v=[\w-]+/,
+  /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[\w-]+/,
+  // YouTube Music
+  /^(https?:\/\/)?music\.youtube\.com\/watch\?v=[\w-]+/,
+  /^(https?:\/\/)?music\.youtube\.com\/playlist\?list=[\w-]+/,
+  /^(https?:\/\/)?music\.youtube\.com\/browse\/.+/,
   // SoundCloud
   /^(https?:\/\/)?(www\.)?soundcloud\.com\/.+/,
   // Bandcamp
   /^(https?:\/\/)?.+\.bandcamp\.com\/.*/,
-  /^(https?:\/\/)?bandcamp\.com\/.*/,
   // Vimeo
   /^(https?:\/\/)?(www\.)?vimeo\.com\/.+/,
 ]
+
+export const AUDIO_QUALITIES = ['64', '96', '128', '160', '192', '256', '320', '384', '448'] as const
 
 export const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'mov']
 

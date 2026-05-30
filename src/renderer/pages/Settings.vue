@@ -108,7 +108,7 @@ async function saveApiKey() {
             @input="s.setAccent(($event.target as HTMLInputElement).value)"
           />
           <span class="color-value">{{ s.accentColor }}</span>
-          <button class="btn-ghost small" @click="s.setAccent('#3D7FFF')">Reset</button>
+          <button class="btn-ghost small" @click="s.setAccent('#88c0d0')">Reset</button>
         </div>
       </section>
 
@@ -116,7 +116,7 @@ async function saveApiKey() {
       <section class="section">
         <label class="section-label">FILENAME NUMBER PREFIX</label>
         <div class="row-between">
-          <span class="section-desc">e.g. <code>001 – Artist – Song.mp3</code></span>
+          <span class="section-desc">Prepend a numbered prefix to filenames</span>
           <button
             class="toggle-btn"
             :class="{ active: s.settings.numericPrefix }"
@@ -125,12 +125,35 @@ async function saveApiKey() {
             <span class="toggle-knob" />
           </button>
         </div>
+        <template v-if="s.settings.numericPrefix">
+          <label class="section-label" style="margin-top:4px">PREFIX TEMPLATE</label>
+          <div class="prefix-row">
+            <input
+              class="prefix-input"
+              :value="s.settings.prefixTemplate"
+              placeholder="{000} - "
+              @change="s.update({ prefixTemplate: ($event.target as HTMLInputElement).value })"
+            />
+            <div class="prefix-preview">
+              <span class="preview-label">PREVIEW</span>
+              <span class="preview-val">{{ (s.settings.prefixTemplate || '{000} - ').replace(/\{(0+)\}/g, (_:string, z:string) => '1'.padStart(z.length, '0')) }}Artist – Song.mp3</span>
+            </div>
+          </div>
+          <span class="section-desc"><code>{0}</code> = 1 digit &nbsp;·&nbsp; <code>{00}</code> = 2 digits &nbsp;·&nbsp; <code>{000}</code> = 3 digits &nbsp;·&nbsp; Mix freely: <code>EP{00} - </code></span>
+        </template>
       </section>
 
-      <!-- Audio quality (info) -->
+      <!-- Audio quality -->
       <section class="section">
-        <label class="section-label">AUDIO QUALITY</label>
-        <span class="info-value">320 kbps MP3 (CBR) — always maximum</span>
+        <label class="section-label">AUDIO QUALITY (kbps)</label>
+        <div class="toggle-group flex-wrap">
+          <button
+            v-for="q in (['64','96','128','160','192','256','320','384','448'] as const)"
+            :key="q"
+            :class="['density-btn', { active: s.settings.audioQuality === q }]"
+            @click="s.update({ audioQuality: q })"
+          >{{ q }}</button>
+        </div>
       </section>
 
       <!-- Concurrent downloads (disabled) -->
@@ -219,6 +242,21 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
 .link { color: var(--accent); text-decoration: none; }
 .link:hover { text-decoration: underline; }
 .disabled-section { opacity: 0.5; pointer-events: none; }
+.flex-wrap { flex-wrap: wrap; }
+.prefix-row { display: flex; flex-direction: column; gap: 8px; }
+.prefix-input {
+  height: 36px; padding: 0 12px; width: 100%;
+  background: var(--bg-2); border: 1.5px solid var(--line-2); border-radius: 8px;
+  color: var(--tx); font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none;
+}
+.prefix-input:focus { border-color: var(--accent); }
+.prefix-preview {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 12px; background: var(--bg-2); border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.preview-label { font-size: 9px; font-weight: 700; color: var(--tx-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.preview-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ok); }
 .coming-soon {
   display: inline-block; margin-left: 6px;
   padding: 1px 5px; border-radius: 4px;
