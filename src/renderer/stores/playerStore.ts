@@ -14,8 +14,9 @@ export const usePlayerStore = defineStore('player', {
     shuffle: false,
     repeat: 'off' as RepeatMode,
     shuffleOrder: [] as number[],
-    lrcRaw: null as string | null,        // raw LRC file content
+    lrcRaw: null as string | null,
     showLyrics: false,
+    pendingSeek: null as number | null,  // seconds; consumed by MiniPlayer
   }),
 
   getters: {
@@ -88,7 +89,7 @@ export const usePlayerStore = defineStore('player', {
     },
 
     async prev() {
-      if (this.progress > 0.05) { this.progress = 0; return }
+      if (this.progress > 0.05) { this.pendingSeek = 0; this.progress = 0; return }
       const prevIdx = this._prevIndex()
       if (prevIdx === -1) return
       this.currentIndex = prevIdx
@@ -122,6 +123,7 @@ export const usePlayerStore = defineStore('player', {
     },
 
     setProgress(p: number) { this.progress = Math.max(0, Math.min(1, p)) },
+    consumeSeek(): number | null { const s = this.pendingSeek; this.pendingSeek = null; return s },
     setDuration(d: number) { this.duration = d },
     setVolume(v: number)   { this.volume = Math.max(0, Math.min(1, v)) },
 

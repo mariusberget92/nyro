@@ -22,10 +22,11 @@ const timeStr = (sec: number) => {
 }
 
 function scrub(e: MouseEvent) {
+  if (!audio.value || !player.duration) return
   const el = e.currentTarget as HTMLElement
-  const ratio = e.offsetX / el.clientWidth
+  const ratio = Math.max(0, Math.min(1, e.offsetX / el.clientWidth))
+  audio.value.currentTime = ratio * player.duration
   player.setProgress(ratio)
-  if (audio.value) audio.value.currentTime = ratio * player.duration
 }
 
 // Sync audio element with store — flush:'post' ensures audio.value is assigned
@@ -45,13 +46,12 @@ watch(() => player.volume, (v) => {
   if (audio.value) audio.value.volume = v
 })
 
-watch(() => player.progress, (p) => {
-  if (!audio.value || player.duration === 0) return
-  const expected = p * player.duration
-  if (Math.abs(audio.value.currentTime - expected) > 1.5) {
-    audio.value.currentTime = expected
-  }
-})
+// Explicit seek requests from store actions (prev restart, etc.)
+watch(() => player.pendingSeek, (t) => {
+  if (t === null || !audio.value) return
+  audio.value.currentTime = t
+  player.consumeSeek()
+}, { flush: 'post' })
 
 function onTimeUpdate() {
   if (!audio.value || player.duration === 0) return
