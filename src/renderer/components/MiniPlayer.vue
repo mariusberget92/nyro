@@ -28,18 +28,18 @@ function scrub(e: MouseEvent) {
   if (audio.value) audio.value.currentTime = ratio * player.duration
 }
 
-// Sync audio element with store
+// Sync audio element with store — flush:'post' ensures audio.value is assigned
 watch(() => player.audioUrl, (url) => {
   if (!audio.value || !url) return
   audio.value.src = url
   if (player.playing) audio.value.play().catch(() => {})
-}, { immediate: true })
+}, { immediate: true, flush: 'post' })
 
 watch(() => player.playing, (playing) => {
   if (!audio.value) return
   if (playing) audio.value.play().catch(() => {})
   else audio.value.pause()
-})
+}, { flush: 'post' })
 
 watch(() => player.volume, (v) => {
   if (audio.value) audio.value.volume = v
