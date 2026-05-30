@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { QueueStatus } from '@shared/types/queue'
 
-const props = defineProps<{ status: QueueStatus }>()
+const props = defineProps<{ status: QueueStatus; clickable?: boolean }>()
 
 const stateColor = computed(() => {
   switch (props.status) {
@@ -50,7 +50,7 @@ const badgeStyle = computed(() => ({
 </script>
 
 <template>
-  <span class="badge" :style="badgeStyle">{{ label }}</span>
+  <span class="badge" :style="badgeStyle" :class="{ clickable }">{{ label }}</span>
 </template>
 
 <style scoped>
@@ -66,4 +66,6 @@ const badgeStyle = computed(() => ({
   line-height: 1.4;
   font-family: 'JetBrains Mono', monospace;
 }
+.badge.clickable { cursor: pointer; }
+.badge.clickable:hover { filter: brightness(1.2); }
 </style>
