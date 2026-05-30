@@ -33,5 +33,6 @@ const visible = computed(() =>
 .progress-fill {
   height: 100%;
   transition: width 0.3s ease, background 0.3s ease;
+  box-shadow: 0 0 4px currentColor;
 }
 </style>

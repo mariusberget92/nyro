@@ -150,7 +150,7 @@ function save() {
   gap: 4px;
 }
 .preview-label { font-size: 10px; font-weight: 700; color: var(--tx-faint); text-transform: uppercase; letter-spacing: 0.05em; }
-.preview-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--tx-dim); word-break: break-all; }
+.preview-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ok); word-break: break-all; }
 .sheet-footer {
   display: flex;
   gap: 8px;

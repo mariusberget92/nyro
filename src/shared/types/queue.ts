@@ -34,6 +34,7 @@ export interface QueueItem {
   error?: string
   addedAt: number
   completedAt?: number
+  downloadMode?: 'audio' | 'video'
 }
 
 export interface QueueProgressPayload {

@@ -30,8 +30,17 @@ export const YOUTUBE_URL_PATTERNS = [
   /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtu\.be\/[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtube\.com\/playlist\?list=[\w-]+/,
-  /^(https?:\/\/)?(music\.)?youtube\.com\/watch\?v=[\w-]+/
+  /^(https?:\/\/)?(music\.)?youtube\.com\/watch\?v=[\w-]+/,
+  // SoundCloud
+  /^(https?:\/\/)?(www\.)?soundcloud\.com\/.+/,
+  // Bandcamp
+  /^(https?:\/\/)?.+\.bandcamp\.com\/.*/,
+  /^(https?:\/\/)?bandcamp\.com\/.*/,
+  // Vimeo
+  /^(https?:\/\/)?(www\.)?vimeo\.com\/.+/,
 ]
+
+export const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'mov']
 
 export const WINDOWS_INVALID_CHARS = /[\\/:*?"<>|]/g
 

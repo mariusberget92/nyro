@@ -7,6 +7,8 @@ export interface AppSettings {
   fetchLyrics: boolean
   embedThumbnail: boolean
   listenNotesApiKey: string
+  downloadMode: 'audio' | 'video'
+  videoQuality: '4K' | '1080p' | '720p' | '480p'
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -17,5 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   filenameFormat: 'artist-title',
   fetchLyrics: true,
   embedThumbnail: false,
-  listenNotesApiKey: ''
+  listenNotesApiKey: '',
+  downloadMode: 'audio',
+  videoQuality: '1080p',
 }

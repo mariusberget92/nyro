@@ -55,6 +55,28 @@ async function saveApiKey() {
         </div>
       </section>
 
+      <!-- Download mode -->
+      <section class="section">
+        <label class="section-label">DOWNLOAD MODE</label>
+        <div class="toggle-group">
+          <button :class="['density-btn', { active: s.settings.downloadMode === 'audio' }]" @click="s.update({ downloadMode: 'audio' })">Audio MP3</button>
+          <button :class="['density-btn', { active: s.settings.downloadMode === 'video' }]" @click="s.update({ downloadMode: 'video' })">Video MP4</button>
+        </div>
+      </section>
+
+      <!-- Video quality (shown only in video mode) -->
+      <section v-if="s.settings.downloadMode === 'video'" class="section">
+        <label class="section-label">VIDEO QUALITY</label>
+        <div class="toggle-group">
+          <button
+            v-for="q in (['4K', '1080p', '720p', '480p'] as const)"
+            :key="q"
+            :class="['density-btn', { active: s.settings.videoQuality === q }]"
+            @click="s.update({ videoQuality: q })"
+          >{{ q }}</button>
+        </div>
+      </section>
+
       <!-- Density -->
       <section class="section">
         <label class="section-label">DENSITY</label>

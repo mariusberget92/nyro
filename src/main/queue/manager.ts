@@ -5,7 +5,7 @@ import { tmpdir } from 'os'
 import { v4 as uuidv4 } from 'uuid'
 import type { QueueItem, QueueStatus } from '@shared/types/queue'
 import { IPC_CHANNELS, YOUTUBE_URL_PATTERNS } from '@shared/constants'
-import { fetchMetadata, downloadAudio } from '../services/ytdlp'
+import { fetchMetadata, downloadMedia } from '../services/ytdlp'
 import { convertToMp3 } from '../services/ffmpeg'
 import { writeID3Tags } from '../services/metadata'
 import { fetchLyrics } from '../services/lyrics'
@@ -75,8 +75,10 @@ class QueueManager {
 
   async addUrl(url: string): Promise<QueueItem[]> {
     if (!this.isValidYouTubeUrl(url)) {
-      throw new Error('Invalid YouTube URL')
+      throw new Error('Invalid URL')
     }
+
+    const settings = loadSettings()
 
     // Create a placeholder item while fetching metadata
     const placeholderId = uuidv4()
@@ -114,6 +116,7 @@ class QueueManager {
         status: 'pending' as QueueStatus,
         progress: 0,
         addedAt: Date.now(),
+        downloadMode: settings.downloadMode,
         metadata: {
           title: meta.title || 'Unknown Title',
           artist: meta.uploader || 'Unknown Artist',
@@ -297,16 +300,20 @@ class QueueManager {
       this.emitProgress(id, progress, status)
     }
 
+    const isVideo = item.downloadMode === 'video'
+
     try {
-      // Step 1: Download audio
+      // Step 1: Download
       this.updateItem(item.id, { status: 'downloading', progress: 0 })
       this.emitStatusChanged(item.id, 'downloading')
 
       const tempOutputTemplate = join(tempDir, `nyro-${item.id}.%(ext)s`)
-      const downloadedPath = await downloadAudio({
+      const downloadedPath = await downloadMedia({
         url: item.url,
         outputTemplate: tempOutputTemplate,
-        onProgress: (pct) => onProgress(item.id, Math.round(pct * 0.5), 'downloading'),
+        mode: isVideo ? 'video' : 'audio',
+        videoQuality: isVideo ? settings.videoQuality : undefined,
+        onProgress: (pct) => onProgress(item.id, Math.round(pct * (isVideo ? 0.9 : 0.5)), 'downloading'),
         signal
       })
 
@@ -315,7 +322,43 @@ class QueueManager {
         return
       }
 
-      // Step 2: Convert to MP3
+      const meta = item.metadata
+
+      if (isVideo) {
+        // Video: skip conversion, just move the mp4
+        this.updateItem(item.id, { status: 'tagging', progress: 95 })
+        this.emitStatusChanged(item.id, 'tagging')
+
+        const baseFolder = settings.outputFolder
+        const targetFolder = join(baseFolder, 'Videos')
+
+        if (!existsSync(targetFolder)) {
+          mkdirSync(targetFolder, { recursive: true })
+        }
+
+        const allItems = this.queue.filter((i) => i.metadata)
+        const index = allItems.findIndex((i) => i.id === item.id) + 1
+        const total = allItems.length
+
+        const filename = meta
+          ? buildFilename({ title: meta.title, artist: meta.artist, settings, index, total })
+          : `nyro-${item.id}`
+
+        const finalPath = join(targetFolder, `${filename}.mp4`)
+        renameSync(downloadedPath, finalPath)
+
+        this.updateItem(item.id, {
+          status: 'completed',
+          progress: 100,
+          outputPath: finalPath,
+          completedAt: Date.now()
+        })
+        this.emitStatusChanged(item.id, 'completed')
+        this.emitCompleted(item.id, finalPath)
+        return
+      }
+
+      // Audio path: Step 2: Convert to MP3
       this.updateItem(item.id, { status: 'converting', progress: 50 })
       this.emitStatusChanged(item.id, 'converting')
 
@@ -345,7 +388,6 @@ class QueueManager {
       this.updateItem(item.id, { status: 'tagging', progress: 80 })
       this.emitStatusChanged(item.id, 'tagging')
 
-      const meta = item.metadata
       let lyrics: string | null = null
 
       if (meta && settings.fetchLyrics) {

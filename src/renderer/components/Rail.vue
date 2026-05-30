@@ -25,7 +25,7 @@ const isSettings = computed(() => route.path === '/settings')
   <nav class="rail">
     <!-- Logo -->
     <div class="logo">
-      <div class="logo-mark">N</div>
+      <div class="logo-mark">&gt;_</div>
     </div>
 
     <!-- Nav links -->
@@ -105,14 +105,16 @@ const isSettings = computed(() => route.path === '/settings')
 .logo-mark {
   width: 36px;
   height: 36px;
-  background: var(--accent);
-  border-radius: 8px;
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
-  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
   letter-spacing: -0.5px;
 }
 
@@ -145,8 +147,10 @@ const isSettings = computed(() => route.path === '/settings')
 }
 
 .nav-btn.active {
-  background: rgba(61, 127, 255, 0.15);
+  background: var(--accent-glow);
   color: var(--accent);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 10px 10px 0;
 }
 
 .badge {

@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { QueueItem } from '@shared/types/queue'
 import DownloadForm from '../components/DownloadForm.vue'
 import QueueList from '../components/QueueList.vue'
 import BatchBar from '../components/BatchBar.vue'
 import EditSheet from '../components/EditSheet.vue'
 import { useQueueStore } from '../stores/queueStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 const queueStore = useQueueStore()
+const settingsStore = useSettingsStore()
+
+const qualityLabel = computed(() => {
+  if (settingsStore.settings.downloadMode === 'video') {
+    return `MP4 · ${settingsStore.settings.videoQuality}`
+  }
+  return 'MP3 · 320 kbps'
+})
 
 const selectedIds = ref<Set<string>>(new Set())
 const editItem = ref<QueueItem | null>(null)
@@ -105,7 +114,7 @@ function handleSave(_id: string, _artist: string, _title: string) {
     <!-- Footer -->
     <footer class="toolbar-footer">
       <span class="footer-info">{{ queueStore.items.length }} {{ queueStore.items.length === 1 ? 'item' : 'items' }}</span>
-      <span class="footer-quality">MP3 · 320 kbps</span>
+      <span class="footer-quality">{{ qualityLabel }}</span>
     </footer>
 
     <!-- Batch bar -->
@@ -146,12 +155,13 @@ function handleSave(_id: string, _artist: string, _title: string) {
 .primary-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 18px; height: 34px;
-  background: var(--accent); color: #fff;
-  border: none; border-radius: var(--radius);
+  background: transparent; color: var(--accent);
+  border: 1.5px solid var(--accent); border-radius: var(--radius);
   font-size: 12.5px; font-weight: 600; cursor: pointer;
-  transition: filter 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background 0.15s, color 0.15s;
 }
-.primary-btn:hover { filter: brightness(1.12); }
+.primary-btn:hover { background: var(--accent); color: #0d1117; }
 .form-panel {
   padding: 14px 18px;
   background: var(--bg-1);

@@ -8,6 +8,10 @@ const YOUTUBE_PATTERNS = [
   /^(https?:\/\/)?(www\.)?youtu\.be\/[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtube\.com\/playlist\?list=[\w-]+/,
   /^(https?:\/\/)?(music\.)?youtube\.com\/watch\?v=[\w-]+/,
+  /^(https?:\/\/)?(www\.)?soundcloud\.com\/.+/,
+  /^(https?:\/\/)?.+\.bandcamp\.com\/.*/,
+  /^(https?:\/\/)?bandcamp\.com\/.*/,
+  /^(https?:\/\/)?(www\.)?vimeo\.com\/.+/,
 ]
 
 const queueStore = useQueueStore()
@@ -27,7 +31,7 @@ async function handleAdd() {
   const trimmed = url.value.trim()
   if (!trimmed) return
   if (!validate(trimmed)) {
-    error.value = 'Please enter a valid YouTube URL'
+    error.value = 'Please enter a valid YouTube, SoundCloud, Bandcamp or Vimeo URL'
     return
   }
   loading.value = true
@@ -51,14 +55,14 @@ function onKeydown(e: KeyboardEvent) {
 <template>
   <div class="form-wrap">
     <div class="tabs">
-      <button :class="['tab', { active: tab === 'song' }]" @click="tab = 'song'">Song</button>
-      <button :class="['tab', { active: tab === 'playlist' }]" @click="tab = 'playlist'">Playlist</button>
+      <button :class="['tab', { active: tab === 'song' }]" @click="tab = 'song'">[SONG]</button>
+      <button :class="['tab', { active: tab === 'playlist' }]" @click="tab = 'playlist'">[PLAYLIST]</button>
     </div>
     <div class="input-row">
       <input
         v-model="url"
         class="url-input"
-        :placeholder="tab === 'song' ? 'Paste YouTube video URL...' : 'Paste YouTube playlist URL...'"
+        :placeholder="tab === 'song' ? 'Paste YouTube, SoundCloud or Bandcamp URL...' : 'Paste YouTube playlist URL...'"
         :disabled="loading"
         @keydown="onKeydown"
       />
@@ -77,17 +81,19 @@ function onKeydown(e: KeyboardEvent) {
 .tabs { display: flex; gap: 4px; }
 .tab {
   padding: 4px 12px;
-  border-radius: 6px;
-  border: none;
+  border-radius: 4px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--tx-faint);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
 }
-.tab:hover { background: var(--bg-3); color: var(--tx-dim); }
-.tab.active { background: var(--bg-3); color: var(--tx); }
+.tab:hover { background: var(--bg-3); color: var(--tx-dim); border-color: var(--line-2); }
+.tab.active { background: var(--bg-3); color: var(--accent); border-color: var(--accent); }
 .input-row { display: flex; gap: 8px; }
 .url-input {
   flex: 1;
@@ -97,7 +103,8 @@ function onKeydown(e: KeyboardEvent) {
   border: 1.5px solid var(--line-2);
   border-radius: var(--radius);
   color: var(--tx);
-  font-size: 13px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
   outline: none;
   transition: border-color 0.15s;
 }

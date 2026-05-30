@@ -43,11 +43,11 @@ async function removeSelected() {
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
-  background: rgba(20,27,38,0.92);
+  background: rgba(26,30,42,0.92);
   backdrop-filter: blur(14px);
-  border: 1px solid var(--line-2);
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  border: 1px solid var(--accent-glow);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px var(--accent-glow);
   z-index: 100;
 }
 .count { font-size: 12.5px; font-weight: 600; color: var(--tx-dim); }

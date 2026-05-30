@@ -58,11 +58,12 @@ const badgeStyle = computed(() => ({
   display: inline-flex;
   align-items: center;
   padding: 2px 7px;
-  border-radius: 100px;
-  font-size: 10.5px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   line-height: 1.4;
+  font-family: 'JetBrains Mono', monospace;
 }
 </style>

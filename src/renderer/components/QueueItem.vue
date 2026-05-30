@@ -129,7 +129,7 @@ const canRetry = computed(() => props.item.status === 'failed')
   transition: background 0.12s;
   cursor: default;
 }
-.queue-row.hovered { background: var(--bg-2); }
+.queue-row.hovered { background: var(--bg-2); border-left: 2px solid var(--accent); margin-left: -2px; }
 .queue-row.selected { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .check-wrap {
   width: 20px;
@@ -193,11 +193,12 @@ const canRetry = computed(() => props.item.status === 'failed')
   text-overflow: ellipsis;
 }
 .track-artist {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--tx-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'JetBrains Mono', monospace;
 }
 .duration {
   font-family: 'JetBrains Mono', monospace;

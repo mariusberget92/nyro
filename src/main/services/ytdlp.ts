@@ -85,30 +85,58 @@ export async function fetchMetadata(url: string): Promise<VideoMetadata[]> {
 export interface DownloadOptions {
   url: string
   outputTemplate: string
+  mode?: 'audio' | 'video'
+  videoQuality?: '4K' | '1080p' | '720p' | '480p'
   onProgress?: (percent: number) => void
   signal?: AbortSignal
 }
 
+function getVideoFormatArg(quality?: '4K' | '1080p' | '720p' | '480p'): string {
+  switch (quality) {
+    case '4K':    return 'bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best'
+    case '720p':  return 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best'
+    case '480p':  return 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best'
+    case '1080p':
+    default:      return 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best'
+  }
+}
+
 /**
- * Download best audio from a YouTube URL using yt-dlp.
+ * Download media from a URL using yt-dlp.
+ * For mode 'audio': downloads best audio.
+ * For mode 'video': downloads best video+audio and merges to mp4.
  * Reports progress 0-100 via onProgress.
  * Returns the path to the downloaded file.
  */
-export function downloadAudio(opts: DownloadOptions): Promise<string> {
+export function downloadMedia(opts: DownloadOptions): Promise<string> {
   return new Promise((resolve, reject) => {
-    const { url, outputTemplate, onProgress, signal } = opts
+    const { url, outputTemplate, mode = 'audio', videoQuality, onProgress, signal } = opts
 
-    const args = [
-      '--format', 'bestaudio',
-      '--output', outputTemplate,
-      '--no-playlist',
-      '--progress',
-      '--newline',
-      url
-    ]
+    let args: string[]
+
+    if (mode === 'video') {
+      args = [
+        '--format', getVideoFormatArg(videoQuality),
+        '--merge-output-format', 'mp4',
+        '--output', outputTemplate,
+        '--no-playlist',
+        '--progress',
+        '--newline',
+        url
+      ]
+    } else {
+      args = [
+        '--format', 'bestaudio',
+        '--output', outputTemplate,
+        '--no-playlist',
+        '--progress',
+        '--newline',
+        url
+      ]
+    }
 
     let proc: ChildProcess | null = spawn(getYtdlpPath(), args, {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
 
     let downloadedFile = ''
@@ -175,3 +203,6 @@ export function downloadAudio(opts: DownloadOptions): Promise<string> {
     })
   })
 }
+
+/** Alias for backward compatibility */
+export const downloadAudio = (opts: DownloadOptions) => downloadMedia({ ...opts, mode: 'audio' })

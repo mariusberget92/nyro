@@ -37,13 +37,13 @@ module.exports = {
           950: '#0f0f11'
         },
         nyro: {
-          500: '#3D7FFF',
-          600: '#3D7FFF'
+          500: '#88c0d0',
+          600: '#88c0d0'
         }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace']
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
       },
       borderRadius: {
         DEFAULT: 'var(--radius)',

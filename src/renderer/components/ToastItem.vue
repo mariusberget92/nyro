@@ -1,12 +1,22 @@
 <script setup lang="ts">
-defineProps<{ message: string; type: 'success' | 'error' | 'info' }>()
+import { computed } from 'vue'
+const props = defineProps<{ message: string; type: 'success' | 'error' | 'info' }>()
 defineEmits<{ close: [] }>()
 
 const colors = { success: 'var(--ok)', error: 'var(--bad)', info: 'var(--accent)' }
+const glowColors = {
+  success: 'rgba(163, 190, 140, 0.15)',
+  error: 'rgba(191, 97, 106, 0.15)',
+  info: 'rgba(136, 192, 208, 0.15)'
+}
+const toastStyle = computed(() => ({
+  borderLeftColor: colors[props.type],
+  boxShadow: `0 8px 24px rgba(0,0,0,0.4), 0 0 12px ${glowColors[props.type]}`
+}))
 </script>
 
 <template>
-  <div class="toast" :style="{ borderLeftColor: colors[type] }">
+  <div class="toast" :style="toastStyle">
     <span class="toast-msg">{{ message }}</span>
     <button class="toast-close" @click="$emit('close')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -28,7 +38,7 @@ const colors = { success: 'var(--ok)', error: 'var(--bad)', info: 'var(--accent)
   border-radius: var(--radius);
   min-width: 240px;
   max-width: 360px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  /* box-shadow applied via inline style for dynamic glow */
 }
 .toast-msg { flex: 1; font-size: 12.5px; color: var(--tx); }
 .toast-close {

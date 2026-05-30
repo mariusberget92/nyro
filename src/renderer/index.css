@@ -4,23 +4,35 @@
 
 @layer base {
   :root {
-    --bg-canvas: #06080c;
-    --bg-0: #0a0e14;
-    --bg-1: #141b26;
-    --bg-2: #1b2433;
-    --bg-3: #222d3f;
-    --bg-4: #2a3850;
-    --tx: #e7ecf3;
-    --tx-dim: #97a3b6;
-    --tx-faint: #586679;
-    --line: rgba(255,255,255,0.07);
-    --line-2: rgba(255,255,255,0.12);
-    --accent: #3D7FFF;
-    --conv: #c084fc;
-    --warn: #e7a948;
-    --ok: #36d39a;
-    --bad: #ff5d6c;
-    --radius: 10px;
+    /* Nord Polar Night — layered dark backgrounds */
+    --bg-canvas: #13161e;
+    --bg-0:      #1a1e2a;
+    --bg-1:      #212636;
+    --bg-2:      #2a3040;
+    --bg-3:      #323849;
+    --bg-4:      #3b4252;
+
+    /* Nord Snow Storm — text hierarchy */
+    --tx:        #eceff4;
+    --tx-dim:    #d8dee9;
+    --tx-faint:  #4c566a;
+
+    /* Cyan-tinted hairlines (hacker feel) */
+    --line:      rgba(136, 192, 208, 0.08);
+    --line-2:    rgba(136, 192, 208, 0.18);
+
+    /* Nord Frost — primary accent (cyan) */
+    --accent:    #88c0d0;
+    --accent-glow: rgba(136, 192, 208, 0.15);
+
+    /* Nord Aurora — semantic state colors */
+    --conv:      #b48ead;   /* purple — converting */
+    --warn:      #ebcb8b;   /* yellow — paused */
+    --ok:        #a3be8c;   /* green  — completed */
+    --bad:       #bf616a;   /* red    — failed */
+
+    /* Geometry */
+    --radius:    6px;
   }
 
   * {
@@ -40,23 +52,18 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+  /* Futuristic scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--accent); opacity: 0.3; border-radius: 2px; }
+
+  /* Hacker glow on focused inputs */
+  input:focus, textarea:focus {
+    box-shadow: 0 0 0 2px var(--accent-glow), 0 0 12px var(--accent-glow);
   }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--bg-3);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--bg-4);
-  }
+  /* Selection color */
+  ::selection { background: var(--accent-glow); color: var(--tx); }
 }
 
 @layer utilities {
