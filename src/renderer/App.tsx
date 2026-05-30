@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Sidebar } from './components/Sidebar'
+import { Rail } from './components/Sidebar'
 import { ToastContainer } from './components/ToastContainer'
 import { Dashboard } from './pages/Dashboard'
 import { Settings } from './pages/Settings'
@@ -18,9 +18,9 @@ export default function App(): JSX.Element {
 
   return (
     <HashRouter>
-      <div className="flex h-screen bg-surface-950 text-white overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-hidden">
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-canvas)', color: 'var(--tx)' }}>
+        <Rail />
+        <main className="flex-1 overflow-hidden flex flex-col" style={{ background: 'var(--bg-0)' }}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />

@@ -3,6 +3,45 @@ import { FolderOpenIcon } from '@heroicons/react/24/outline'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useToastStore } from '../stores/toastStore'
 import { pageVariants } from '../animations/variants'
+import type { Density } from '../stores/settingsStore'
+
+function SectionLabel({ children }: { children: React.ReactNode }): JSX.Element {
+  return (
+    <p
+      className="uppercase tracking-wider mb-3"
+      style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx-faint)' }}
+    >
+      {children}
+    </p>
+  )
+}
+
+function SettingRow({
+  label,
+  description,
+  children
+}: {
+  label: string
+  description?: string
+  children: React.ReactNode
+}): JSX.Element {
+  return (
+    <div
+      className="flex items-center justify-between py-4"
+      style={{ borderBottom: '1px solid var(--line)' }}
+    >
+      <div className="min-w-0 mr-4">
+        <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--tx)' }}>{label}</p>
+        {description && (
+          <p className="mt-0.5" style={{ fontSize: 11.5, color: 'var(--tx-faint)' }}>
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  )
+}
 
 function Toggle({
   checked,
@@ -20,41 +59,31 @@ function Toggle({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
-      className={`relative inline-flex w-10 h-5 items-center rounded-full transition-colors focus:outline-none ${
-        checked ? 'bg-nyro-600' : 'bg-surface-700'
-      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+      className="relative inline-flex items-center transition-colors"
+      style={{
+        width: 40,
+        height: 22,
+        borderRadius: 11,
+        background: checked ? 'var(--accent)' : 'var(--bg-3)',
+        border: '1px solid var(--line-2)',
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer'
+      }}
     >
       <span
-        className={`inline-block w-4 h-4 rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-1'
-        }`}
+        className="inline-block rounded-full bg-white shadow transition-transform"
+        style={{
+          width: 16,
+          height: 16,
+          transform: checked ? 'translateX(20px)' : 'translateX(2px)'
+        }}
       />
     </button>
   )
 }
 
-function SettingRow({
-  label,
-  description,
-  children
-}: {
-  label: string
-  description?: string
-  children: React.ReactNode
-}): JSX.Element {
-  return (
-    <div className="flex items-center justify-between py-4 border-b border-surface-800 last:border-0">
-      <div className="min-w-0 mr-4">
-        <p className="text-sm font-medium text-white">{label}</p>
-        {description && <p className="text-xs text-surface-400 mt-0.5">{description}</p>}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  )
-}
-
 export function Settings(): JSX.Element {
-  const { settings, updateSettings, selectOutputFolder } = useSettingsStore()
+  const { settings, updateSettings, selectOutputFolder, ui, setDensity, setCornerRadius, setAccentColor } = useSettingsStore()
   const toast = useToastStore()
 
   const handleUpdate = async <K extends keyof typeof settings>(
@@ -71,25 +100,47 @@ export function Settings(): JSX.Element {
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="flex flex-col h-full p-6 overflow-y-auto"
+      className="flex flex-col h-full overflow-y-auto"
     >
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-white mb-1">Settings</h1>
-        <p className="text-sm text-surface-400">Configure your download preferences</p>
+      {/* Toolbar */}
+      <div
+        className="flex items-center px-6 shrink-0"
+        style={{
+          height: 56,
+          borderBottom: '1px solid var(--line)',
+          background: 'var(--bg-0)'
+        }}
+      >
+        <h1 style={{ fontSize: 17, fontWeight: 800, color: 'var(--tx)' }}>Settings</h1>
       </div>
 
-      <div className="max-w-xl space-y-6">
+      <div className="p-6 max-w-xl">
+
         {/* Output */}
-        <section>
-          <h2 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Output</h2>
-          <div className="bg-surface-900 border border-surface-800 rounded-lg px-4">
+        <section className="mb-8">
+          <SectionLabel>Output</SectionLabel>
+          <div
+            className="px-4"
+            style={{ background: 'var(--bg-1)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}
+          >
             <SettingRow
               label="Output folder"
-              description={settings.outputFolder || 'Click to select a folder'}
+              description={settings.outputFolder || 'Click Browse to select a folder'}
             >
               <button
                 onClick={selectOutputFolder}
-                className="flex items-center gap-2 px-3 py-1.5 bg-surface-800 hover:bg-surface-700 text-sm text-white rounded transition-colors"
+                className="flex items-center gap-2 font-semibold transition-colors"
+                style={{
+                  padding: '7px 14px',
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-2)',
+                  borderRadius: 8,
+                  color: 'var(--tx)',
+                  fontSize: 12.5,
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-3)' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-2)' }}
               >
                 <FolderOpenIcon className="w-4 h-4" />
                 Browse
@@ -98,7 +149,7 @@ export function Settings(): JSX.Element {
 
             <SettingRow
               label="Numeric prefix"
-              description="Prepend track number to filenames (e.g. 001 - Artist - Title.mp3)"
+              description="Prepend track number to filenames (e.g. 001 – Artist – Title.mp3)"
             >
               <Toggle
                 checked={settings.numericPrefix}
@@ -110,7 +161,17 @@ export function Settings(): JSX.Element {
               <select
                 value={settings.filenameFormat}
                 onChange={(e) => handleUpdate('filenameFormat', e.target.value as typeof settings.filenameFormat)}
-                className="bg-surface-800 border border-surface-700 text-sm text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-nyro-500"
+                className="transition-colors"
+                style={{
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-2)',
+                  borderRadius: 8,
+                  color: 'var(--tx)',
+                  fontSize: 12.5,
+                  padding: '6px 10px',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
               >
                 <option value="artist-title">Artist – Title</option>
                 <option value="title-artist">Title – Artist</option>
@@ -121,14 +182,26 @@ export function Settings(): JSX.Element {
         </section>
 
         {/* Audio */}
-        <section>
-          <h2 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Audio</h2>
-          <div className="bg-surface-900 border border-surface-800 rounded-lg px-4">
+        <section className="mb-8">
+          <SectionLabel>Audio</SectionLabel>
+          <div
+            className="px-4"
+            style={{ background: 'var(--bg-1)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}
+          >
             <SettingRow label="Audio quality" description="MP3 bitrate for converted files">
               <select
                 value={settings.audioQuality}
                 onChange={(e) => handleUpdate('audioQuality', e.target.value as typeof settings.audioQuality)}
-                className="bg-surface-800 border border-surface-700 text-sm text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-nyro-500"
+                style={{
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-2)',
+                  borderRadius: 8,
+                  color: 'var(--tx)',
+                  fontSize: 12.5,
+                  padding: '6px 10px',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
               >
                 <option value="320">320 kbps</option>
                 <option value="256">256 kbps</option>
@@ -149,24 +222,91 @@ export function Settings(): JSX.Element {
           </div>
         </section>
 
-        {/* Advanced (grayed) */}
+        {/* Appearance */}
+        <section className="mb-8">
+          <SectionLabel>Appearance</SectionLabel>
+          <div
+            className="px-4"
+            style={{ background: 'var(--bg-1)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}
+          >
+            <SettingRow label="Density" description="Row size and spacing">
+              <div className="flex gap-1">
+                {(['comfortable', 'compact'] as Density[]).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDensity(d)}
+                    className="font-semibold transition-colors"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      borderRadius: 8,
+                      background: ui.density === d ? 'var(--accent)' : 'var(--bg-2)',
+                      color: ui.density === d ? '#fff' : 'var(--tx-dim)',
+                      border: '1px solid var(--line-2)',
+                      cursor: 'pointer',
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </SettingRow>
+
+            <SettingRow
+              label="Corner radius"
+              description={`${ui.cornerRadius}px`}
+            >
+              <input
+                type="range"
+                min={2}
+                max={18}
+                value={ui.cornerRadius}
+                onChange={(e) => setCornerRadius(Number(e.target.value))}
+                style={{ width: 120, accentColor: 'var(--accent)' }}
+              />
+            </SettingRow>
+
+            <SettingRow label="Accent color">
+              <input
+                type="color"
+                value={ui.accentColor}
+                onChange={(e) => setAccentColor(e.target.value)}
+                style={{
+                  width: 40,
+                  height: 32,
+                  borderRadius: 8,
+                  border: '1px solid var(--line-2)',
+                  background: 'var(--bg-2)',
+                  padding: 4,
+                  cursor: 'pointer'
+                }}
+              />
+            </SettingRow>
+          </div>
+        </section>
+
+        {/* Advanced */}
         <section>
-          <h2 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Advanced</h2>
-          <div className="bg-surface-900 border border-surface-800 rounded-lg px-4 opacity-50">
+          <SectionLabel>Advanced</SectionLabel>
+          <div
+            className="px-4 opacity-50"
+            style={{ background: 'var(--bg-1)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}
+          >
             <SettingRow
               label="Concurrent downloads"
-              description="Parallel downloads (coming in a future release)"
+              description="Parallel downloads — Coming soon"
             >
               <div className="flex items-center gap-2">
                 <input
-                  type="number"
+                  type="range"
                   min={1}
                   max={5}
                   value={1}
                   disabled
-                  className="w-16 bg-surface-800 border border-surface-700 text-sm text-white rounded px-2 py-1 text-center cursor-not-allowed"
+                  style={{ width: 100, accentColor: 'var(--accent)', opacity: 0.5 }}
                 />
-                <span className="text-xs text-surface-500">MVP: 1</span>
+                <span className="font-mono" style={{ fontSize: 11, color: 'var(--tx-faint)' }}>1</span>
               </div>
             </SettingRow>
           </div>

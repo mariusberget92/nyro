@@ -5,19 +5,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        nyro: {
-          50: '#f8f8f9',
-          100: '#f0f0f2',
-          200: '#e4e4e8',
-          300: '#d0d0d8',
-          400: '#a8a8b8',
-          500: '#7070a0',
-          600: '#5050a0',
-          700: '#3a3a8c',
-          800: '#252570',
-          900: '#141450',
-          950: '#0a0a28'
-        },
+        canvas: 'var(--bg-canvas)',
+        bg0: 'var(--bg-0)',
+        bg1: 'var(--bg-1)',
+        bg2: 'var(--bg-2)',
+        bg3: 'var(--bg-3)',
+        bg4: 'var(--bg-4)',
+        tx: 'var(--tx)',
+        'tx-dim': 'var(--tx-dim)',
+        'tx-faint': 'var(--tx-faint)',
+        line: 'var(--line)',
+        'line-2': 'var(--line-2)',
+        accent: 'var(--accent)',
+        conv: 'var(--conv)',
+        warn: 'var(--warn)',
+        ok: 'var(--ok)',
+        bad: 'var(--bad)',
+        // keep legacy surface colors for compatibility
         surface: {
           50: '#fafafa',
           100: '#f4f4f5',
@@ -31,10 +35,21 @@ module.exports = {
           850: '#1f1f23',
           900: '#18181b',
           950: '#0f0f11'
+        },
+        nyro: {
+          500: '#3D7FFF',
+          600: '#3D7FFF'
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif']
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace']
+      },
+      borderRadius: {
+        DEFAULT: 'var(--radius)',
+        lg: 'var(--radius)',
+        md: '8px',
+        sm: '6px'
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite'

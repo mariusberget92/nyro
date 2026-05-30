@@ -4,8 +4,15 @@ import { useIpc } from '../hooks/useIpc'
 import { useToastStore } from '../stores/toastStore'
 import { QueueItem } from './QueueItem'
 import { useCallback } from 'react'
+import type { QueueItem as QueueItemType } from '@shared/types/queue'
 
-export function QueueList(): JSX.Element {
+interface QueueListProps {
+  selectedIds: Set<string>
+  onToggleSelect: (id: string) => void
+  onEdit: (item: QueueItemType) => void
+}
+
+export function QueueList({ selectedIds, onToggleSelect, onEdit }: QueueListProps): JSX.Element {
   const items = useQueueStore((s) => s.items)
   const updateProgress = useQueueStore((s) => s.updateProgress)
   const updateStatus = useQueueStore((s) => s.updateStatus)
@@ -36,23 +43,31 @@ export function QueueList(): JSX.Element {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center py-16 text-surface-500"
+        className="flex flex-col items-center justify-center py-24"
+        style={{ color: 'var(--tx-faint)' }}
       >
-        <svg className="w-12 h-12 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        <svg className="w-12 h-12 mb-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
             d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <p className="text-sm">Queue is empty</p>
-        <p className="text-xs mt-1">Add a YouTube URL above to get started</p>
+        <p className="text-sm font-semibold" style={{ color: 'var(--tx-dim)' }}>Queue is empty</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--tx-faint)' }}>Add a YouTube URL above to get started</p>
       </motion.div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <AnimatePresence mode="popLayout">
-        {items.map((item) => (
-          <QueueItem key={item.id} item={item} />
+        {items.map((item, index) => (
+          <QueueItem
+            key={item.id}
+            item={item}
+            index={index}
+            selected={selectedIds.has(item.id)}
+            onToggleSelect={onToggleSelect}
+            onEdit={onEdit}
+          />
         ))}
       </AnimatePresence>
     </div>

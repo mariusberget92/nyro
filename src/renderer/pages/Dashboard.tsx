@@ -1,49 +1,57 @@
+import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { PlayIcon, PauseIcon, StopIcon, TrashIcon } from '@heroicons/react/24/outline'
+import {
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  TrashIcon,
+  FunnelIcon,
+  BoltIcon
+} from '@heroicons/react/24/outline'
 import { DownloadForm } from '../components/DownloadForm'
 import { QueueList } from '../components/QueueList'
+import { BatchBar } from '../components/BatchBar'
+import { EditSheet } from '../components/EditSheet'
 import { useQueueStore } from '../stores/queueStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { pageVariants } from '../animations/variants'
-import type { QueueStatus } from '@shared/types/queue'
-
-function QueueSummary(): JSX.Element {
-  const items = useQueueStore((s) => s.items)
-  const counts = items.reduce<Record<QueueStatus, number>>(
-    (acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1
-      return acc
-    },
-    {} as Record<QueueStatus, number>
-  )
-
-  const total = items.length
-  const completed = counts['completed'] || 0
-  const failed = counts['failed'] || 0
-  const active = (counts['downloading'] || 0) + (counts['converting'] || 0) + (counts['tagging'] || 0) + (counts['fetching'] || 0)
-  const pending = counts['pending'] || 0
-
-  return (
-    <div className="flex items-center gap-4 text-xs text-surface-400">
-      <span>{total} total</span>
-      {active > 0 && <span className="text-blue-400">{active} active</span>}
-      {pending > 0 && <span className="text-surface-300">{pending} pending</span>}
-      {completed > 0 && <span className="text-emerald-400">{completed} done</span>}
-      {failed > 0 && <span className="text-red-400">{failed} failed</span>}
-    </div>
-  )
-}
+import type { QueueItem } from '@shared/types/queue'
 
 export function Dashboard(): JSX.Element {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [editItem, setEditItem] = useState<QueueItem | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+
   const items = useQueueStore((s) => s.items)
   const isProcessing = useQueueStore((s) => s.isProcessing)
   const isPaused = useQueueStore((s) => s.isPaused)
+  const startQueue = useQueueStore((s) => s.startQueue)
   const pauseQueue = useQueueStore((s) => s.pauseQueue)
   const resumeQueue = useQueueStore((s) => s.resumeQueue)
   const stopQueue = useQueueStore((s) => s.stopQueue)
   const clearCompleted = useQueueStore((s) => s.clearCompleted)
+  const settings = useSettingsStore((s) => s.settings)
 
-  const hasItems = items.length > 0
-  const hasCompletedOrFailed = items.some((i) => ['completed', 'cancelled', 'failed'].includes(i.status))
+  const hasCompletedOrFailed = items.some((i) =>
+    ['completed', 'cancelled', 'failed'].includes(i.status)
+  )
+  const pendingCount = items.filter((i) =>
+    !['completed', 'cancelled', 'failed'].includes(i.status)
+  ).length
+  const quality = settings?.audioQuality ?? '320'
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const handleSaveEdit = useCallback((_id: string, _artist: string, _title: string) => {
+    // In a full impl, update metadata via IPC
+  }, [])
 
   return (
     <motion.div
@@ -51,68 +59,185 @@ export function Dashboard(): JSX.Element {
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="flex flex-col h-full p-6 overflow-hidden"
+      className="relative flex flex-col h-full overflow-hidden"
     >
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-white mb-1">Download Queue</h1>
-        <p className="text-sm text-surface-400">Add YouTube URLs to download as high-quality MP3s</p>
+      {/* Toolbar */}
+      <div
+        className="flex items-center px-5 shrink-0"
+        style={{
+          height: 56,
+          background: 'var(--bg-0)',
+          borderBottom: '1px solid var(--line)',
+          gap: 8
+        }}
+      >
+        <h1 style={{ fontSize: 17, fontWeight: 800, color: 'var(--tx)', flex: 'none' }}>
+          Queue
+        </h1>
+
+        {pendingCount > 0 && (
+          <span
+            className="font-mono"
+            style={{ fontSize: 11, color: 'var(--tx-faint)', marginLeft: 4 }}
+          >
+            {pendingCount} pending
+          </span>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Right controls */}
+        <div className="flex items-center gap-1">
+          <IconBtn onClick={() => setShowAddForm((v) => !v)} title="Add URL">
+            <FunnelIcon className="w-4 h-4" />
+          </IconBtn>
+
+          {hasCompletedOrFailed && (
+            <IconBtn onClick={() => clearCompleted()} title="Clear completed">
+              <TrashIcon className="w-4 h-4" />
+            </IconBtn>
+          )}
+
+          <div style={{ width: 1, height: 20, background: 'var(--line-2)', margin: '0 4px' }} />
+
+          {!isProcessing && (
+            <PrimaryBtn
+              onClick={() => startQueue()}
+              icon={<BoltIcon className="w-4 h-4" />}
+            >
+              Run queue
+            </PrimaryBtn>
+          )}
+
+          {isProcessing && !isPaused && (
+            <IconBtn onClick={() => pauseQueue()} title="Pause">
+              <PauseIcon className="w-4 h-4" />
+            </IconBtn>
+          )}
+
+          {isPaused && (
+            <IconBtn onClick={() => resumeQueue()} title="Resume">
+              <PlayIcon className="w-4 h-4" />
+            </IconBtn>
+          )}
+
+          {isProcessing && (
+            <IconBtn onClick={() => stopQueue()} title="Stop" danger>
+              <StopIcon className="w-4 h-4" />
+            </IconBtn>
+          )}
+        </div>
       </div>
 
-      {/* URL Form */}
-      <div className="mb-6">
-        <DownloadForm />
-      </div>
-
-      {/* Queue controls */}
-      {hasItems && (
-        <div className="flex items-center justify-between mb-3">
-          <QueueSummary />
-          <div className="flex items-center gap-2">
-            {isProcessing && !isPaused && (
-              <button
-                onClick={() => pauseQueue()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-surface-300 hover:text-white bg-surface-800 hover:bg-surface-700 rounded transition-colors"
-              >
-                <PauseIcon className="w-3.5 h-3.5" />
-                Pause
-              </button>
-            )}
-            {isPaused && (
-              <button
-                onClick={() => resumeQueue()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-surface-800 hover:bg-surface-700 rounded transition-colors"
-              >
-                <PlayIcon className="w-3.5 h-3.5" />
-                Resume
-              </button>
-            )}
-            {(isProcessing) && (
-              <button
-                onClick={() => stopQueue()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:text-red-300 bg-surface-800 hover:bg-surface-700 rounded transition-colors"
-              >
-                <StopIcon className="w-3.5 h-3.5" />
-                Stop
-              </button>
-            )}
-            {hasCompletedOrFailed && (
-              <button
-                onClick={() => clearCompleted()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded transition-colors"
-              >
-                <TrashIcon className="w-3.5 h-3.5" />
-                Clear done
-              </button>
-            )}
-          </div>
+      {/* Add form */}
+      {showAddForm && (
+        <div
+          className="px-5 py-4 shrink-0"
+          style={{ borderBottom: '1px solid var(--line)', background: 'var(--bg-1)' }}
+        >
+          <DownloadForm />
         </div>
       )}
 
-      {/* Queue list */}
+      {/* Queue table */}
       <div className="flex-1 overflow-y-auto">
-        <QueueList />
+        <QueueList
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onEdit={setEditItem}
+        />
       </div>
+
+      {/* Footer */}
+      <div
+        className="flex items-center justify-between px-5 shrink-0"
+        style={{
+          height: 36,
+          borderTop: '1px solid var(--line)',
+          background: 'var(--bg-0)'
+        }}
+      >
+        <span style={{ fontSize: 11, color: 'var(--tx-faint)' }}>
+          {items.length} {items.length === 1 ? 'item' : 'items'} in queue
+        </span>
+        <span
+          className="font-mono font-bold"
+          style={{ fontSize: 11, color: 'var(--accent)' }}
+        >
+          MP3 · {quality} kbps
+        </span>
+      </div>
+
+      {/* Batch bar */}
+      <BatchBar selectedIds={selectedIds} onClear={() => setSelectedIds(new Set())} />
+
+      {/* Edit sheet */}
+      <EditSheet
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        onSave={handleSaveEdit}
+      />
     </motion.div>
+  )
+}
+
+function IconBtn({
+  onClick,
+  title,
+  children,
+  danger
+}: {
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+  danger?: boolean
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="flex items-center justify-center rounded-lg transition-colors"
+      style={{
+        width: 32,
+        height: 32,
+        color: danger ? 'var(--bad)' : 'var(--tx-dim)',
+        background: 'transparent'
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-3)' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function PrimaryBtn({
+  onClick,
+  icon,
+  children
+}: {
+  onClick: () => void
+  icon: React.ReactNode
+  children: React.ReactNode
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-2 font-semibold transition-all"
+      style={{
+        padding: '10px 20px',
+        background: 'var(--accent)',
+        color: '#fff',
+        borderRadius: 'var(--radius)',
+        fontSize: 12.5,
+        border: 'none',
+        cursor: 'pointer'
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.15)' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'none' }}
+    >
+      {icon}
+      {children}
+    </button>
   )
 }

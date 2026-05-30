@@ -5,25 +5,36 @@ interface StatusBadgeProps {
   className?: string
 }
 
-const statusConfig: Record<QueueStatus, { label: string; className: string }> = {
-  pending: { label: 'Pending', className: 'bg-surface-700 text-surface-300' },
-  fetching: { label: 'Fetching', className: 'bg-blue-900/50 text-blue-300' },
-  downloading: { label: 'Downloading', className: 'bg-nyro-900/50 text-nyro-300' },
-  converting: { label: 'Converting', className: 'bg-purple-900/50 text-purple-300' },
-  tagging: { label: 'Tagging', className: 'bg-indigo-900/50 text-indigo-300' },
-  completed: { label: 'Done', className: 'bg-emerald-900/50 text-emerald-400' },
-  paused: { label: 'Paused', className: 'bg-yellow-900/50 text-yellow-400' },
-  cancelled: { label: 'Cancelled', className: 'bg-surface-700 text-surface-400' },
-  failed: { label: 'Failed', className: 'bg-red-900/50 text-red-400' }
+type StatusCfg = {
+  label: string
+  color: string
+  icon: string
+}
+
+const statusConfig: Record<QueueStatus, StatusCfg> = {
+  pending:     { label: 'Queued',      color: 'var(--tx-faint)', icon: '○' },
+  fetching:    { label: 'Fetching',    color: 'var(--accent)',   icon: '◎' },
+  downloading: { label: 'Downloading', color: 'var(--accent)',   icon: '↓' },
+  converting:  { label: 'Converting',  color: 'var(--conv)',     icon: '⟳' },
+  tagging:     { label: 'Tagging',     color: 'var(--conv)',     icon: '✎' },
+  completed:   { label: 'Done',        color: 'var(--ok)',       icon: '✓' },
+  paused:      { label: 'Paused',      color: 'var(--warn)',     icon: '⏸' },
+  cancelled:   { label: 'Cancelled',   color: 'var(--tx-faint)', icon: '✕' },
+  failed:      { label: 'Failed',      color: 'var(--bad)',      icon: '✕' }
 }
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps): JSX.Element {
-  const config = statusConfig[status]
+  const cfg = statusConfig[status] ?? statusConfig.pending
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.className} ${className}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold uppercase tracking-wide shrink-0 ${className}`}
+      style={{
+        color: cfg.color,
+        background: `color-mix(in srgb, ${cfg.color} 15%, transparent)`
+      }}
     >
-      {config.label}
+      <span>{cfg.icon}</span>
+      {cfg.label}
     </span>
   )
 }

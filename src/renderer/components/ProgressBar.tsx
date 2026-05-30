@@ -1,27 +1,33 @@
 import { motion } from 'framer-motion'
+import type { QueueStatus } from '@shared/types/queue'
 
 interface ProgressBarProps {
   progress: number
-  className?: string
-  color?: 'blue' | 'green' | 'yellow' | 'red'
+  status: QueueStatus
 }
 
-const colorMap: Record<NonNullable<ProgressBarProps['color']>, string> = {
-  blue: 'bg-blue-500',
-  green: 'bg-emerald-500',
-  yellow: 'bg-yellow-500',
-  red: 'bg-red-500'
+function getBarColor(status: QueueStatus): string {
+  if (status === 'converting' || status === 'tagging') return 'var(--conv)'
+  if (status === 'completed') return 'var(--ok)'
+  if (status === 'failed') return 'var(--bad)'
+  if (status === 'paused') return 'var(--warn)'
+  return 'var(--accent)'
 }
 
-export function ProgressBar({ progress, className = '', color = 'blue' }: ProgressBarProps): JSX.Element {
-  const clampedProgress = Math.min(100, Math.max(0, progress))
+export function ProgressBar({ progress, status }: ProgressBarProps): JSX.Element {
+  const pct = Math.min(100, Math.max(0, progress))
+  const color = getBarColor(status)
 
   return (
-    <div className={`w-full h-1.5 bg-surface-700 rounded-full overflow-hidden ${className}`}>
+    <div
+      className="absolute bottom-0 left-0 right-0"
+      style={{ height: 2, background: 'rgba(255,255,255,0.05)' }}
+    >
       <motion.div
-        className={`h-full rounded-full ${colorMap[color]}`}
+        className="h-full"
+        style={{ background: color }}
         initial={{ width: '0%' }}
-        animate={{ width: `${clampedProgress}%` }}
+        animate={{ width: `${pct}%` }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
       />
     </div>

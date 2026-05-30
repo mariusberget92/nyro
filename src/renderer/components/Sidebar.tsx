@@ -1,60 +1,132 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { QueueListIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
-import { APP_NAME } from '@shared/constants'
+import {
+  MagnifyingGlassIcon,
+  QueueListIcon,
+  Cog6ToothIcon,
+  FolderIcon
+} from '@heroicons/react/24/outline'
+import { useQueueStore } from '../stores/queueStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
-const navItems = [
-  { to: '/dashboard', label: 'Queue', icon: QueueListIcon },
-  { to: '/settings', label: 'Settings', icon: Cog6ToothIcon }
-]
-
-export function Sidebar(): JSX.Element {
+function NavIcon({
+  to,
+  icon: Icon,
+  badge
+}: {
+  to: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: number
+}): JSX.Element {
   return (
-    <aside className="flex flex-col w-56 bg-surface-900 border-r border-surface-800 shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-surface-800">
-        <div className="w-7 h-7 rounded-lg bg-nyro-600 flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-sm">N</span>
+    <NavLink
+      to={to}
+      className="relative flex items-center justify-center"
+      style={{ width: 44, height: 44 }}
+    >
+      {({ isActive }) => (
+        <div
+          className="relative flex items-center justify-center rounded-xl transition-all"
+          style={{
+            width: 40,
+            height: 40,
+            background: isActive ? 'var(--bg-3)' : 'transparent',
+            color: isActive ? 'var(--accent)' : 'var(--tx-dim)'
+          }}
+          onMouseEnter={(e) => {
+            if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-2)'
+          }}
+          onMouseLeave={(e) => {
+            if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+          }}
+        >
+          <Icon className="w-5 h-5" />
+          {badge != null && badge > 0 && (
+            <span
+              className="absolute -top-1 -right-1 flex items-center justify-center rounded-full font-mono text-[9px] font-bold"
+              style={{
+                minWidth: 16,
+                height: 16,
+                padding: '0 3px',
+                background: 'var(--accent)',
+                color: '#fff'
+              }}
+            >
+              {badge > 99 ? '99+' : badge}
+            </span>
+          )}
         </div>
-        <span className="font-semibold text-white text-sm tracking-wide">{APP_NAME}</span>
+      )}
+    </NavLink>
+  )
+}
+
+export function Rail(): JSX.Element {
+  const items = useQueueStore((s) => s.items)
+  const queueCount = items.filter((i) =>
+    !['completed', 'cancelled', 'failed'].includes(i.status)
+  ).length
+  const settings = useSettingsStore((s) => s.settings)
+  const audioQuality = settings?.audioQuality ?? '320'
+
+  const folderPath = settings?.outputFolder ?? ''
+  const shortPath = folderPath
+    ? folderPath.split('/').pop() || folderPath.split('\\').pop() || folderPath
+    : '~'
+
+  return (
+    <aside
+      className="flex flex-col items-center shrink-0"
+      style={{
+        width: 60,
+        background: 'var(--bg-1)',
+        borderRight: '1px solid var(--line)'
+      }}
+    >
+      {/* Logo */}
+      <div className="flex items-center justify-center py-4" style={{ height: 56 }}>
+        <div
+          className="flex items-center justify-center rounded-lg font-bold text-white"
+          style={{ width: 28, height: 28, background: 'var(--accent)', fontSize: 13 }}
+        >
+          N
+        </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'text-white bg-surface-800'
-                  : 'text-surface-400 hover:text-white hover:bg-surface-800/50'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <motion.span
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-lg bg-surface-800"
-                    style={{ zIndex: -1 }}
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.35 }}
-                  />
-                )}
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </>
-            )}
-          </NavLink>
-        ))}
+      {/* Nav icons */}
+      <nav className="flex flex-col items-center gap-1 flex-1 pt-2">
+        <NavIcon to="/dashboard" icon={MagnifyingGlassIcon} />
+        <NavIcon to="/dashboard" icon={QueueListIcon} badge={queueCount} />
+        <NavIcon to="/settings" icon={Cog6ToothIcon} />
       </nav>
 
-      {/* Footer version */}
-      <div className="px-5 py-3 border-t border-surface-800">
-        <p className="text-xs text-surface-600">v1.0.0</p>
+      {/* Bottom: folder + quality */}
+      <div className="flex flex-col items-center gap-2 pb-4">
+        <button
+          className="flex flex-col items-center justify-center gap-1 p-1 rounded-lg transition-colors"
+          title={folderPath || 'Output folder'}
+          style={{ color: 'var(--tx-faint)', background: 'transparent' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--tx-dim)' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--tx-faint)' }}
+        >
+          <FolderIcon className="w-4 h-4" />
+          <span
+            className="font-mono text-center leading-tight"
+            style={{ fontSize: 9, maxWidth: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {shortPath}
+          </span>
+        </button>
+        <span
+          className="font-mono font-bold text-center"
+          style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '0.02em' }}
+        >
+          {audioQuality} kbps
+        </span>
       </div>
     </aside>
   )
 }
+
+// Keep backward-compat export
+export { Rail as Sidebar }
