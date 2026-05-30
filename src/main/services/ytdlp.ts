@@ -27,6 +27,9 @@ export interface VideoMetadata {
   title: string
   uploader: string
   album?: string
+  release_year?: number
+  release_date?: string
+  upload_date?: string
   duration: number
   thumbnail?: string
   webpage_url: string

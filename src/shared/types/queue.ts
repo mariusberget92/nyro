@@ -13,6 +13,7 @@ export interface QueueItemMetadata {
   title: string
   artist: string
   album: string
+  year?: number
   duration: number
   thumbnailUrl?: string
   videoId: string

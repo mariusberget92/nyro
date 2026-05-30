@@ -9,7 +9,7 @@ import { fetchMetadata, downloadAudio } from '../services/ytdlp'
 import { convertToMp3 } from '../services/ffmpeg'
 import { writeID3Tags } from '../services/metadata'
 import { fetchLyrics } from '../services/lyrics'
-import { buildFilename } from '../services/filename'
+import { buildFilename, sanitizeFilenameComponent } from '../services/filename'
 import { loadQueue, saveQueue, loadSettings } from '../storage/store'
 
 type ProgressCallback = (id: string, progress: number, status: QueueStatus) => void
@@ -71,21 +71,28 @@ class QueueManager {
     // Remove placeholder
     this.queue = this.queue.filter((i) => i.id !== placeholderId)
 
-    const newItems: QueueItem[] = metadataList.map((meta) => ({
-      id: uuidv4(),
-      url: meta.webpage_url || url,
-      status: 'pending' as QueueStatus,
-      progress: 0,
-      addedAt: Date.now(),
-      metadata: {
-        title: meta.title || 'Unknown Title',
-        artist: meta.uploader || 'Unknown Artist',
-        album: meta.album || meta.uploader || 'Unknown Album',
-        duration: meta.duration || 0,
-        thumbnailUrl: meta.thumbnail,
-        videoId: meta.id
+    const newItems: QueueItem[] = metadataList.map((meta) => {
+      const year = meta.release_year
+        ?? (meta.release_date ? parseInt(meta.release_date.substring(0, 4)) : undefined)
+        ?? (meta.upload_date ? parseInt(meta.upload_date.substring(0, 4)) : undefined)
+
+      return {
+        id: uuidv4(),
+        url: meta.webpage_url || url,
+        status: 'pending' as QueueStatus,
+        progress: 0,
+        addedAt: Date.now(),
+        metadata: {
+          title: meta.title || 'Unknown Title',
+          artist: meta.uploader || 'Unknown Artist',
+          album: meta.album || '',
+          year: isNaN(year as number) ? undefined : year,
+          duration: meta.duration || 0,
+          thumbnailUrl: meta.thumbnail,
+          videoId: meta.id
+        }
       }
-    }))
+    })
 
     this.queue.push(...newItems)
     this.persist()
@@ -245,9 +252,18 @@ class QueueManager {
       }
 
       // Step 4: Move to output folder
-      const outputFolder = settings.outputFolder
-      if (!existsSync(outputFolder)) {
-        mkdirSync(outputFolder, { recursive: true })
+      const baseFolder = settings.outputFolder
+
+      // If the track has an album, save to Albums/Album Title (Year)/
+      let targetFolder = baseFolder
+      if (meta?.album) {
+        const safeAlbum = sanitizeFilenameComponent(meta.album)
+        const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
+        targetFolder = join(baseFolder, 'Albums', folderName)
+      }
+
+      if (!existsSync(targetFolder)) {
+        mkdirSync(targetFolder, { recursive: true })
       }
 
       const allItems = this.queue.filter((i) => i.metadata)
@@ -264,7 +280,7 @@ class QueueManager {
           })
         : `nyro-${item.id}`
 
-      const finalPath = join(outputFolder, `${filename}.mp3`)
+      const finalPath = join(targetFolder, `${filename}.mp3`)
       renameSync(tempMp3, finalPath)
 
       this.updateItem(item.id, {
