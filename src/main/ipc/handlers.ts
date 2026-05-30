@@ -5,7 +5,7 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync } from 'fs'
 
 let libraryCache: ReturnType<typeof scanLibrary> | null = null
 
@@ -142,5 +142,26 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   // library:get-lrc — read a .lrc sidecar file and return its content
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET_LRC, (_event, lrcPath: string) => {
     try { return readFileSync(lrcPath, 'utf8') } catch { return null }
+  })
+
+  // library:rename-folder — rename an album or podcast folder on disk
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_RENAME_FOLDER, (_event, oldPath: string, newName: string) => {
+    const parent = join(oldPath, '..')
+    const newPath = join(parent, newName)
+    if (!existsSync(oldPath)) throw new Error('Folder not found: ' + oldPath)
+    if (existsSync(newPath)) throw new Error('A folder with that name already exists.')
+    renameSync(oldPath, newPath)
+    // Patch in-memory cache so the library reflects the rename without a full rescan
+    if (libraryCache) {
+      for (const track of libraryCache.tracks) {
+        if (track.path.startsWith(oldPath + '/') || track.path.startsWith(oldPath + '\\')) {
+          track.path = newPath + track.path.slice(oldPath.length)
+          if (track.coverPath) track.coverPath = newPath + track.coverPath.slice(oldPath.length)
+          track.album = newName
+        }
+      }
+      saveLibraryCache(libraryCache)
+    }
+    return newPath
   })
 }

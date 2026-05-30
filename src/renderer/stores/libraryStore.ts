@@ -84,5 +84,17 @@ export const useLibraryStore = defineStore('library', {
         this.scannedAt = result.scannedAt
       }
     },
+    async renameFolder(oldPath: string, newName: string): Promise<string> {
+      const newPath = await window.nyro.invoke<string>('library:rename-folder', oldPath, newName)
+      // Patch tracks in-memory so UI updates without a full rescan
+      for (const t of this.tracks) {
+        if (t.path.startsWith(oldPath)) {
+          t.path = newPath + t.path.slice(oldPath.length)
+          if (t.coverPath) t.coverPath = newPath + t.coverPath.slice(oldPath.length)
+          t.album = newName
+        }
+      }
+      return newPath
+    },
   }
 })
