@@ -72,5 +72,9 @@ export const useQueueStore = defineStore('queue', {
       const item = this.items.find(i => i.id === id)
       if (item) { item.status = 'failed'; item.error = error; item.progress = 0 }
     },
+    toggleLike(id: string) {
+      const item = this.items.find(i => i.id === id)
+      if (item) item.liked = !item.liked
+    },
   }
 })
