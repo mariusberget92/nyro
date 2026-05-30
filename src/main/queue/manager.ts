@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { mkdirSync, existsSync, renameSync, unlinkSync } from 'fs'
+import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { v4 as uuidv4 } from 'uuid'
 import type { QueueItem, QueueStatus } from '@shared/types/queue'
@@ -13,6 +13,19 @@ import { buildFilename, sanitizeFilenameComponent } from '../services/filename'
 import { loadQueue, saveQueue, loadSettings } from '../storage/store'
 import { httpDownload } from '../services/httpDownload'
 import { getEpisode } from '../services/listennotes'
+
+function moveFile(src: string, dest: string): void {
+  try {
+    renameSync(src, dest)
+  } catch (err: any) {
+    if (err.code === 'EXDEV') {
+      copyFileSync(src, dest)
+      unlinkSync(src)
+    } else {
+      throw err
+    }
+  }
+}
 
 function parseArtistTitle(videoTitle: string): { artist: string; title: string } {
   // Strip common suffixes like "(Official Video)", "[HD]", "(Lyrics)", etc.
@@ -313,7 +326,7 @@ class QueueManager {
 
       const safeTitle = sanitizeFilenameComponent(meta.title)
       const finalPath = join(targetFolder, `${safeTitle}.mp3`)
-      renameSync(tempMp3, finalPath)
+      moveFile(tempMp3, finalPath)
 
       this.updateItem(item.id, {
         status: 'completed',
@@ -393,7 +406,7 @@ class QueueManager {
           : `nyro-${item.id}`
 
         const finalPath = join(targetFolder, `${filename}.mp4`)
-        renameSync(downloadedPath, finalPath)
+        moveFile(downloadedPath, finalPath)
 
         this.updateItem(item.id, {
           status: 'completed',
@@ -481,7 +494,7 @@ class QueueManager {
         : `nyro-${item.id}`
 
       const finalPath = join(targetFolder, `${filename}.mp3`)
-      renameSync(tempMp3, finalPath)
+      moveFile(tempMp3, finalPath)
 
       this.updateItem(item.id, {
         status: 'completed',
