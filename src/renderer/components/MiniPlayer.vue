@@ -228,8 +228,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .mini-player {
   flex-shrink: 0;
-  background: linear-gradient(to top, var(--bg-1), var(--bg-0));
-  border-top: 1px solid var(--line-2);
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
 }
@@ -251,9 +251,8 @@ onBeforeUnmount(() => {
 }
 .scrub-thumb {
   position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 9px; height: 9px; border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.1s;
@@ -310,14 +309,13 @@ onBeforeUnmount(() => {
 .ctrl-btn:hover { color: var(--tx-dim); background: var(--bg-3); }
 .ctrl-btn.active { color: var(--accent); }
 .play-btn {
-  width: 36px; height: 36px; border: none;
+  width: 34px; height: 34px; border: none;
   background: var(--accent); color: var(--bg-0);
   border-radius: 50%; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: box-shadow 0.15s, transform 0.1s;
-  box-shadow: 0 0 12px var(--accent-glow);
+  transition: opacity 0.12s;
 }
-.play-btn:hover { box-shadow: 0 0 20px var(--accent-glow-strong); transform: scale(1.06); }
+.play-btn:hover { opacity: 0.85; }
 
 /* ── Right ──────────────────────────────── */
 .right-section {
@@ -343,7 +341,7 @@ onBeforeUnmount(() => {
 .lyrics-panel {
   max-height: 220px;
   overflow-y: auto;
-  background: linear-gradient(to bottom, var(--bg-0), var(--bg-1));
+  background: var(--bg-1);
   border-top: 1px solid var(--line);
   padding: 16px 0 12px;
   text-align: center;
