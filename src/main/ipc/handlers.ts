@@ -3,7 +3,7 @@ import { join } from 'path'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
-import { searchPodcasts, searchEpisodes, getPodcast, extractPodcastId } from '../services/listennotes'
+import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 
@@ -107,23 +107,15 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   // podcast:search-shows
   ipcMain.handle(IPC_CHANNELS.PODCAST_SEARCH_SHOWS, async (_event, query: string) => {
     const settings = loadSettings()
-    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
-    return searchPodcasts(query, settings.listenNotesApiKey)
+    if (!settings.taddyUserId || !settings.taddyApiKey) throw new Error('Taddy credentials not set. Add them in Settings.')
+    return searchPodcasts(query, settings.taddyUserId, settings.taddyApiKey)
   })
 
-  // podcast:search-episodes
-  ipcMain.handle(IPC_CHANNELS.PODCAST_SEARCH_EPISODES, async (_event, query: string) => {
+  // podcast:get-show — uuid + optional page number for pagination
+  ipcMain.handle(IPC_CHANNELS.PODCAST_GET_SHOW, async (_event, uuid: string, page?: number) => {
     const settings = loadSettings()
-    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
-    return searchEpisodes(query, settings.listenNotesApiKey)
-  })
-
-  // podcast:get-show
-  ipcMain.handle(IPC_CHANNELS.PODCAST_GET_SHOW, async (_event, idOrUrl: string, nextPubDate?: number) => {
-    const settings = loadSettings()
-    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
-    const id = extractPodcastId(idOrUrl)
-    return getPodcast(id, settings.listenNotesApiKey, nextPubDate)
+    if (!settings.taddyUserId || !settings.taddyApiKey) throw new Error('Taddy credentials not set. Add them in Settings.')
+    return getPodcastSeries(uuid, settings.taddyUserId, settings.taddyApiKey, page ?? 1)
   })
 
   // podcast:add-episode

@@ -10,6 +10,8 @@ export interface AppSettings {
   fetchLyrics: boolean
   embedThumbnail: boolean
   listenNotesApiKey: string
+  taddyUserId: string
+  taddyApiKey: string
   downloadMode: 'audio' | 'video'
   videoQuality: '4K' | '1080p' | '720p' | '480p'
   cookiesBrowser: '' | 'chrome' | 'firefox' | 'edge' | 'brave' | 'opera' | 'vivaldi' | 'safari'
@@ -26,6 +28,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fetchLyrics: true,
   embedThumbnail: false,
   listenNotesApiKey: '',
+  taddyUserId: '',
+  taddyApiKey: '',
   downloadMode: 'audio',
   videoQuality: '1080p',
   cookiesBrowser: '',
