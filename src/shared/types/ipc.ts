@@ -27,8 +27,9 @@ export interface IpcInvokeChannels {
   'podcast:search-episodes': (query: string) => Promise<LNSearchResult>
   'podcast:get-show': (idOrUrl: string, nextPubDate?: number) => Promise<LNPodcast>
   'podcast:add-episode': (episodeId: string) => Promise<QueueItem>
-  'library:scan': () => Promise<LibraryScanResult>
-  'library:get':  () => Promise<LibraryScanResult | null>
+  'library:scan':    () => Promise<LibraryScanResult>
+  'library:get':     () => Promise<LibraryScanResult | null>
+  'library:get-lrc': (lrcPath: string) => Promise<string | null>
 }
 
 // Main → Renderer (on channels)

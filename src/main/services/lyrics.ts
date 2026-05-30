@@ -17,39 +17,35 @@ interface LrclibResponse {
  * Fetch lyrics from lrclib.net for a given artist and track.
  * Returns plain text lyrics or null if not found.
  */
+export interface LyricsResult {
+  plain: string | null
+  synced: string | null   // LRC format "[mm:ss.xx] line text"
+}
+
 export async function fetchLyrics(
   artistName: string,
   trackName: string,
   albumName?: string,
   duration?: number
-): Promise<string | null> {
+): Promise<LyricsResult> {
   try {
-    const params = new URLSearchParams({
-      artist_name: artistName,
-      track_name: trackName
-    })
-
-    if (albumName) {
-      params.set('album_name', albumName)
-    }
-
-    if (duration) {
-      params.set('duration', String(Math.round(duration)))
-    }
+    const params = new URLSearchParams({ artist_name: artistName, track_name: trackName })
+    if (albumName) params.set('album_name', albumName)
+    if (duration)  params.set('duration', String(Math.round(duration)))
 
     const url = `${LRCLIB_API_BASE}/get?${params.toString()}`
     const data = await httpGet(url)
-
-    if (!data) return null
+    if (!data) return { plain: null, synced: null }
 
     const parsed: LrclibResponse = JSON.parse(data)
+    if (parsed.instrumental) return { plain: null, synced: null }
 
-    if (parsed.instrumental) return null
-
-    return parsed.plainLyrics || null
+    return {
+      plain:  parsed.plainLyrics  || null,
+      synced: parsed.syncedLyrics || null,
+    }
   } catch {
-    // Lyrics are best-effort; never fail the download
-    return null
+    return { plain: null, synced: null }
   }
 }
 

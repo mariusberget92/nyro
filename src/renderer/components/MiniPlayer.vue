@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 
 const player = usePlayerStore()
 const audio = ref<HTMLAudioElement | null>(null)
+const lyricsPanel = ref<HTMLElement | null>(null)
+const activeLine  = ref<HTMLElement | null>(null)
 
 const coverStyle = computed(() => {
   const t = player.currentTrack
@@ -66,6 +68,13 @@ function onEnded() {
   player.next()
 }
 
+// Auto-scroll lyrics to active line
+watch(() => (player as any).currentLyricIndex, () => {
+  nextTick(() => {
+    activeLine.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  })
+})
+
 onMounted(() => {
   if (audio.value) audio.value.volume = player.volume
 })
@@ -83,6 +92,23 @@ onBeforeUnmount(() => {
       @loadedmetadata="onLoadedMetadata"
       @ended="onEnded"
     />
+
+    <!-- Lyrics panel (slides up) -->
+    <Transition name="lyrics-slide">
+      <div v-if="player.showLyrics" ref="lyricsPanel" class="lyrics-panel">
+        <div v-if="(player as any).lrcLines?.length" class="lyrics-lines">
+          <div
+            v-for="(line, i) in (player as any).lrcLines"
+            :key="i"
+            :ref="el => { if (i === (player as any).currentLyricIndex) activeLine = el as HTMLElement }"
+            class="lyric-line"
+            :class="{ active: i === (player as any).currentLyricIndex, past: i < (player as any).currentLyricIndex }"
+          >{{ line.text }}</div>
+        </div>
+        <div v-else-if="player.lrcRaw" class="lyrics-plain">{{ player.lrcRaw }}</div>
+        <div v-else class="lyrics-empty">No lyrics available for this track.</div>
+      </div>
+    </Transition>
 
     <!-- Scrub bar -->
     <div class="scrub-track" @click="scrub">
@@ -139,6 +165,22 @@ onBeforeUnmount(() => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 4 15 12 5 20 5 4"/>
             <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+
+        <!-- Lyrics -->
+        <button
+          class="ctrl-btn"
+          :class="{ active: player.showLyrics }"
+          :title="player.currentTrack?.lrcPath ? 'Lyrics' : 'No lyrics available'"
+          :style="{ opacity: player.currentTrack?.lrcPath ? 1 : 0.35 }"
+          @click="player.currentTrack?.lrcPath && player.toggleLyrics()"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
           </svg>
         </button>
 
@@ -295,5 +337,45 @@ onBeforeUnmount(() => {
 .vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none; width: 11px; height: 11px;
   border-radius: 50%; background: var(--accent); cursor: pointer;
+}
+
+/* ── Lyrics panel ──────────────────────────────── */
+.lyrics-panel {
+  max-height: 220px;
+  overflow-y: auto;
+  background: linear-gradient(to bottom, var(--bg-0), var(--bg-1));
+  border-top: 1px solid var(--line);
+  padding: 16px 0 12px;
+  text-align: center;
+}
+.lyrics-lines {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 60px;
+}
+.lyric-line {
+  font-size: 14px; line-height: 1.6;
+  color: var(--tx-faint);
+  transition: color 0.3s, transform 0.3s, font-size 0.3s;
+}
+.lyric-line.past  { color: var(--tx-faint); }
+.lyric-line.active {
+  color: var(--tx);
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 0 20px var(--accent-glow-strong);
+}
+.lyrics-plain {
+  padding: 0 60px; font-size: 13px; line-height: 1.8;
+  color: var(--tx-dim); white-space: pre-wrap; text-align: left;
+}
+.lyrics-empty {
+  font-size: 12px; color: var(--tx-faint); padding: 8px 0;
+}
+
+.lyrics-slide-enter-active, .lyrics-slide-leave-active {
+  transition: max-height 0.25s ease, opacity 0.2s;
+}
+.lyrics-slide-enter-from, .lyrics-slide-leave-to {
+  max-height: 0; opacity: 0;
 }
 </style>

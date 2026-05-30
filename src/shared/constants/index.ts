@@ -21,8 +21,9 @@ export const IPC_CHANNELS = {
   PODCAST_GET_SHOW: 'podcast:get-show',
   PODCAST_ADD_EPISODE: 'podcast:add-episode',
   // Library
-  LIBRARY_SCAN: 'library:scan',
-  LIBRARY_GET:  'library:get',
+  LIBRARY_SCAN:    'library:scan',
+  LIBRARY_GET:     'library:get',
+  LIBRARY_GET_LRC: 'library:get-lrc',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',

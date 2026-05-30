@@ -9,6 +9,7 @@ export interface LibraryTrack {
   trackNumber?: number
   genre?: string
   coverPath?: string   // cached cover art on disk
+  lrcPath?: string     // .lrc sidecar with synced lyrics
   source: 'music' | 'podcast' | 'video'
 }
 

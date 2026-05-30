@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync } from 'fs'
+import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { v4 as uuidv4 } from 'uuid'
 import type { QueueItem, QueueStatus } from '@shared/types/queue'
@@ -150,6 +150,11 @@ class QueueManager {
     // Remove placeholder
     this.queue = this.queue.filter((i) => i.id !== placeholderId)
 
+    // Detect playlist: more than one item, or first item has a playlist_title
+    const playlistTitle = metadataList.length > 1
+      ? (metadataList[0].playlist_title || null)
+      : null
+
     const newItems: QueueItem[] = metadataList.map((meta) => {
       const year = meta.release_year
         ?? (meta.release_date ? parseInt(meta.release_date.substring(0, 4)) : undefined)
@@ -164,6 +169,7 @@ class QueueManager {
         progress: 0,
         addedAt: Date.now(),
         downloadMode: settings.downloadMode,
+        playlistTitle: playlistTitle ?? undefined,
         metadata: {
           title: title || meta.title || 'Unknown Title',
           artist: artist || cleanUploader(meta.uploader) || 'Unknown Artist',
@@ -454,10 +460,13 @@ class QueueManager {
       this.updateItem(item.id, { status: 'tagging', progress: 80 })
       this.emitStatusChanged(item.id, 'tagging')
 
-      let lyrics: string | null = null
+      let lyricsPlain: string | null = null
+      let lyricsSynced: string | null = null
 
       if (meta && settings.fetchLyrics) {
-        lyrics = await fetchLyrics(meta.artist, meta.title, meta.album, meta.duration)
+        const result = await fetchLyrics(meta.artist, meta.title, meta.album, meta.duration)
+        lyricsPlain  = result.plain
+        lyricsSynced = result.synced
       }
 
       if (meta) {
@@ -465,19 +474,23 @@ class QueueManager {
           title: meta.title,
           artist: meta.artist,
           album: meta.album,
-          lyrics: lyrics ?? undefined
+          lyrics: lyricsPlain ?? undefined
         })
       }
 
       // Step 4: Move to output folder
       const baseFolder = settings.outputFolder
-
-      // If the track has an album, save to Albums/Album Title (Year)/
       let targetFolder = baseFolder
+
       if (meta?.album) {
+        // Named album → Albums/Album Title (Year)/
         const safeAlbum = sanitizeFilenameComponent(meta.album)
         const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
         targetFolder = join(baseFolder, 'Albums', folderName)
+      } else if (item.playlistTitle) {
+        // Generic playlist → Playlists/Playlist Name/
+        const safeName = sanitizeFilenameComponent(item.playlistTitle)
+        targetFolder = join(baseFolder, 'Playlists', safeName)
       }
 
       if (!existsSync(targetFolder)) {
@@ -500,6 +513,13 @@ class QueueManager {
 
       const finalPath = join(targetFolder, `${filename}.mp3`)
       moveFile(tempMp3, finalPath)
+
+      // Save synced LRC sidecar next to the MP3
+      if (lyricsSynced) {
+        try {
+          writeFileSync(join(targetFolder, `${filename}.lrc`), lyricsSynced, 'utf8')
+        } catch { /* non-fatal */ }
+      }
 
       this.updateItem(item.id, {
         status: 'completed',

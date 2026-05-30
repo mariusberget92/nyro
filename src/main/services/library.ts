@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs'
+import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
 import { join, extname, basename } from 'path'
 import NodeID3 from 'node-id3'
 import type { LibraryTrack, LibraryScanResult } from '@shared/types/library'
@@ -61,13 +61,9 @@ export function scanLibrary(outputFolder: string, cacheDir: string): LibraryScan
           coverPath = saveCover(pic.imageBuffer, cacheDir, id)
         }
 
-        // Duration via file stat fallback (node-id3 doesn't give duration)
-        let duration: number | undefined
-        try {
-          const stat = statSync(filePath)
-          // rough estimate: (bytes * 8) / bitrate — skip, leave undefined for audio
-          void stat
-        } catch { /* ignore */ }
+        // Check for .lrc sidecar next to the audio file
+        const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
+        const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
 
         return {
           id,
@@ -79,6 +75,7 @@ export function scanLibrary(outputFolder: string, cacheDir: string): LibraryScan
           trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
           genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
           coverPath,
+          lrcPath: resolvedLrcPath,
           source,
         } satisfies LibraryTrack
       } catch {

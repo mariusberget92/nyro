@@ -27,6 +27,7 @@ export interface QueueItem {
   url: string
   source?: 'youtube' | 'podcast'
   podcastShowTitle?: string
+  playlistTitle?: string      // set when item came from a playlist URL
   status: QueueStatus
   progress: number
   metadata?: QueueItemMetadata

@@ -14,11 +14,39 @@ export const usePlayerStore = defineStore('player', {
     shuffle: false,
     repeat: 'off' as RepeatMode,
     shuffleOrder: [] as number[],
+    lrcRaw: null as string | null,        // raw LRC file content
+    showLyrics: false,
   }),
 
   getters: {
     currentTrack: (state): LibraryTrack | null =>
       state.currentIndex >= 0 ? state.queue[state.currentIndex] ?? null : null,
+
+    // Parse LRC into [{time: seconds, text: string}]
+    lrcLines: (state): { time: number; text: string }[] => {
+      if (!state.lrcRaw) return []
+      return state.lrcRaw
+        .split('\n')
+        .map(line => {
+          const m = line.match(/^\[(\d+):(\d+\.\d+)\](.*)$/)
+          if (!m) return null
+          return { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() }
+        })
+        .filter(Boolean) as { time: number; text: string }[]
+    },
+
+    // Index of the currently active lyric line
+    currentLyricIndex: (state): number => {
+      const lines = (state as any).lrcLines as { time: number; text: string }[]
+      if (!lines.length) return -1
+      const now = state.progress * state.duration
+      let idx = -1
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].time <= now) idx = i
+        else break
+      }
+      return idx
+    },
 
     audioUrl: (state): string | null => {
       const t = state.currentIndex >= 0 ? state.queue[state.currentIndex] : null
@@ -30,36 +58,53 @@ export const usePlayerStore = defineStore('player', {
   },
 
   actions: {
-    play(tracks: LibraryTrack[], startIndex = 0) {
+    async play(tracks: LibraryTrack[], startIndex = 0) {
       this.queue = tracks
       this.shuffleOrder = tracks.map((_, i) => i)
       if (this.shuffle) this._reshufflFrom(startIndex)
       this.currentIndex = startIndex
       this.playing = true
+      this.lrcRaw = null
+      await this._loadLrc(tracks[startIndex])
     },
 
-    playOne(track: LibraryTrack) {
-      this.play([track], 0)
+    async playOne(track: LibraryTrack) {
+      await this.play([track], 0)
     },
 
     togglePlay() {
       this.playing = !this.playing
     },
 
-    next() {
+    async next() {
       if (this.repeat === 'one') { this.progress = 0; return }
       const nextIdx = this._nextIndex()
       if (nextIdx === -1) { this.playing = false; return }
       this.currentIndex = nextIdx
       this.progress = 0
+      this.lrcRaw = null
+      await this._loadLrc(this.queue[nextIdx])
     },
 
-    prev() {
+    async prev() {
       if (this.progress > 0.05) { this.progress = 0; return }
       const prevIdx = this._prevIndex()
       if (prevIdx === -1) return
       this.currentIndex = prevIdx
       this.progress = 0
+      this.lrcRaw = null
+      await this._loadLrc(this.queue[prevIdx])
+    },
+
+    toggleLyrics() { this.showLyrics = !this.showLyrics },
+
+    async _loadLrc(track?: LibraryTrack) {
+      if (!track?.lrcPath) { this.lrcRaw = null; return }
+      try {
+        this.lrcRaw = await window.nyro.invoke<string | null>('library:get-lrc', track.lrcPath)
+      } catch {
+        this.lrcRaw = null
+      }
     },
 
     cycleRepeat() {

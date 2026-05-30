@@ -5,6 +5,7 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, searchEpisodes, getPodcast, extractPodcastId } from '../services/listennotes'
 import { scanLibrary } from '../services/library'
+import { readFileSync } from 'fs'
 
 let libraryCache: ReturnType<typeof scanLibrary> | null = null
 
@@ -114,4 +115,9 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
   // library:get — return cached result (or null if never scanned)
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET, () => libraryCache)
+
+  // library:get-lrc — read a .lrc sidecar file and return its content
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_GET_LRC, (_event, lrcPath: string) => {
+    try { return readFileSync(lrcPath, 'utf8') } catch { return null }
+  })
 }
