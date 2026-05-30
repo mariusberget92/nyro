@@ -3,6 +3,7 @@ import Dashboard from '../pages/Dashboard.vue'
 import Settings from '../pages/Settings.vue'
 import Podcasts from '../pages/Podcasts.vue'
 import Library from '../pages/Library.vue'
+import Playlists from '../pages/Playlists.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -12,5 +13,6 @@ export default createRouter({
     { path: '/settings', component: Settings },
     { path: '/podcasts', component: Podcasts },
     { path: '/library', component: Library },
+    { path: '/playlists', component: Playlists },
   ]
 })

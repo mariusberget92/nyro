@@ -16,10 +16,11 @@ const qualityLabel = computed(() => {
   return `${s.audioQuality}k`
 })
 
-const isDashboard = computed(() => route.path === '/dashboard')
-const isPodcasts  = computed(() => route.path === '/podcasts')
-const isLibrary   = computed(() => route.path === '/library')
-const isSettings  = computed(() => route.path === '/settings')
+const isDashboard  = computed(() => route.path === '/dashboard')
+const isPodcasts   = computed(() => route.path === '/podcasts')
+const isLibrary    = computed(() => route.path === '/library')
+const isPlaylists  = computed(() => route.path === '/playlists')
+const isSettings   = computed(() => route.path === '/settings')
 </script>
 
 <template>
@@ -63,6 +64,19 @@ const isSettings  = computed(() => route.path === '/settings')
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+      </button>
+
+      <button class="nav-btn" :class="{ active: isPlaylists }" title="Playlists" @click="router.push('/playlists')">
+        <div class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8"  y1="6"  x2="21" y2="6" />
+            <line x1="8"  y1="12" x2="21" y2="12"/>
+            <line x1="8"  y1="18" x2="21" y2="18"/>
+            <circle cx="3" cy="6"  r="1" fill="currentColor"/>
+            <circle cx="3" cy="12" r="1" fill="currentColor"/>
+            <circle cx="3" cy="18" r="1" fill="currentColor"/>
           </svg>
         </div>
       </button>
