@@ -5,10 +5,12 @@ import MiniPlayer from './components/MiniPlayer.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { useQueueStore } from './stores/queueStore'
 import { useSettingsStore } from './stores/settingsStore'
+import { useToastStore } from './stores/toastStore'
 import { useIpc } from './composables/useIpc'
 
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
+const toastStore = useToastStore()
 
 onMounted(async () => {
   await queueStore.loadQueue()
@@ -26,6 +28,16 @@ useIpc('queue:completed', (payload: any) => {
 })
 useIpc('queue:error', (payload: any) => {
   queueStore.markFailed(payload.id, payload.error)
+})
+useIpc('updater:status', (payload: any) => {
+  if (!payload.done) return
+  if (payload.ytdlpUpdated) {
+    toastStore.add(payload.message, 'success', 6000)
+  } else if (payload.ffmpegMissing) {
+    toastStore.add('FFmpeg not found in resources — audio conversion will fail', 'error', 8000)
+  } else {
+    toastStore.add(payload.message, 'info', 5000)
+  }
 })
 </script>
 

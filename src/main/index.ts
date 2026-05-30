@@ -2,6 +2,8 @@ import { app, BrowserWindow, shell, protocol, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { registerIpcHandlers } from './ipc/handlers'
+import { checkAndUpdate } from './services/updater'
+import { IPC_CHANNELS } from '@shared/constants'
 
 // Ensure single instance
 const gotLock = app.requestSingleInstanceLock()
@@ -31,6 +33,29 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+
+    // Run binary check after a short delay so the UI is fully rendered first
+    setTimeout(() => {
+      checkAndUpdate((message) => {
+        mainWindow?.webContents.send(IPC_CHANNELS.UPDATER_STATUS, { message })
+      }).then((result) => {
+        mainWindow?.webContents.send(IPC_CHANNELS.UPDATER_STATUS, {
+          message: result.ytdlpUpdated
+            ? `yt-dlp updated to ${result.ytdlp.current}`
+            : result.ytdlp.found
+              ? `yt-dlp ${result.ytdlp.current} · FFmpeg ${result.ffmpeg.current ?? 'not found'}`
+              : 'yt-dlp not found — downloads will fail',
+          done: true,
+          ytdlpUpdated: result.ytdlpUpdated,
+          ffmpegMissing: !result.ffmpeg.found,
+        })
+      }).catch(() => {
+        mainWindow?.webContents.send(IPC_CHANNELS.UPDATER_STATUS, {
+          message: 'Binary check failed',
+          done: true,
+        })
+      })
+    }, 1500)
   })
 
   // Open external links in the default browser

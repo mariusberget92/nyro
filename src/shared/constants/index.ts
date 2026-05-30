@@ -21,6 +21,7 @@ export const IPC_CHANNELS = {
   PODCAST_GET_SHOW: 'podcast:get-show',
   PODCAST_ADD_EPISODE: 'podcast:add-episode',
   // Library
+  UPDATER_STATUS:  'updater:status',   // Main → Renderer push
   LIBRARY_SCAN:    'library:scan',
   LIBRARY_GET:     'library:get',
   LIBRARY_GET_LRC: 'library:get-lrc',

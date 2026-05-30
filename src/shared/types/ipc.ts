@@ -37,6 +37,7 @@ export interface IpcOnChannels {
   'queue:progress': QueueProgressPayload
   'queue:status-changed': QueueStatusChangedPayload
   'queue:completed': QueueCompletedPayload
+  'updater:status': { message: string; done?: boolean; ytdlpUpdated?: boolean; ffmpegMissing?: boolean }
   'queue:error': QueueErrorPayload
 }
 
