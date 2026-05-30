@@ -101,6 +101,7 @@ export async function searchPodcasts(
   query: string, userId: string, apiKey: string
 ): Promise<TaddySearchResult> {
   const q = `{ search(term: ${JSON.stringify(query)}, filterForTypes: PODCASTSERIES, limitPerPage: 10) {
+    searchId
     podcastSeries { ${SERIES_FIELDS} }
   } }`
   const data: any = await gql(userId, apiKey, q)
