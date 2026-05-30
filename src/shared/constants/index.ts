@@ -20,6 +20,9 @@ export const IPC_CHANNELS = {
   PODCAST_SEARCH_EPISODES: 'podcast:search-episodes',
   PODCAST_GET_SHOW: 'podcast:get-show',
   PODCAST_ADD_EPISODE: 'podcast:add-episode',
+  // Library
+  LIBRARY_SCAN: 'library:scan',
+  LIBRARY_GET:  'library:get',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',

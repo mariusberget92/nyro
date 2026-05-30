@@ -1,5 +1,6 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, protocol, net } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'url'
 import { registerIpcHandlers } from './ipc/handlers'
 
 // Ensure single instance
@@ -48,6 +49,12 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Serve local files for the media player via nyro-file:// protocol
+  protocol.handle('nyro-file', (request) => {
+    const filePath = decodeURIComponent(request.url.slice('nyro-file://'.length))
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+
   createWindow()
 
   app.on('activate', () => {

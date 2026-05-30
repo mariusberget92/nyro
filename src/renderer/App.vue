@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import Rail from './components/Rail.vue'
+import MiniPlayer from './components/MiniPlayer.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { useQueueStore } from './stores/queueStore'
 import { useSettingsStore } from './stores/settingsStore'
@@ -31,9 +32,12 @@ useIpc('queue:error', (payload: any) => {
 <template>
   <div class="app-shell">
     <Rail />
-    <main class="main-area">
-      <RouterView />
-    </main>
+    <div class="content-col">
+      <main class="main-area">
+        <RouterView />
+      </main>
+      <MiniPlayer />
+    </div>
     <ToastContainer />
   </div>
 </template>
@@ -46,13 +50,18 @@ useIpc('queue:error', (payload: any) => {
   background: var(--bg-canvas);
   color: var(--tx);
 }
+.content-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: inset 4px 0 16px rgba(0,0,0,0.18);
+}
 .main-area {
   flex: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg-0);
-  /* Subtle vignette on left edge where rail meets content */
-  box-shadow: inset 4px 0 16px rgba(0,0,0,0.18);
 }
 </style>

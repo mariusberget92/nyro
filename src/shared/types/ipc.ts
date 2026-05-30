@@ -7,6 +7,7 @@ import type {
 } from './queue'
 import type { AppSettings } from './settings'
 import type { LNSearchResult, LNPodcast } from './podcast'
+import type { LibraryScanResult } from './library'
 
 // Renderer → Main (invoke channels)
 export interface IpcInvokeChannels {
@@ -26,6 +27,8 @@ export interface IpcInvokeChannels {
   'podcast:search-episodes': (query: string) => Promise<LNSearchResult>
   'podcast:get-show': (idOrUrl: string, nextPubDate?: number) => Promise<LNPodcast>
   'podcast:add-episode': (episodeId: string) => Promise<QueueItem>
+  'library:scan': () => Promise<LibraryScanResult>
+  'library:get':  () => Promise<LibraryScanResult | null>
 }
 
 // Main → Renderer (on channels)

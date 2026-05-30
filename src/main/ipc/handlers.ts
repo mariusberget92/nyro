@@ -1,8 +1,12 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
+import { join } from 'path'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, searchEpisodes, getPodcast, extractPodcastId } from '../services/listennotes'
+import { scanLibrary } from '../services/library'
+
+let libraryCache: ReturnType<typeof scanLibrary> | null = null
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
@@ -98,4 +102,16 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string) => {
     return queueManager.addPodcastEpisode(episodeId)
   })
+
+  // library:scan — walk output folder, read ID3 tags
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_SCAN, () => {
+    const settings = loadSettings()
+    if (!settings.outputFolder) throw new Error('No output folder set.')
+    const cacheDir = join(app.getPath('userData'), 'covers')
+    libraryCache = scanLibrary(settings.outputFolder, cacheDir)
+    return libraryCache
+  })
+
+  // library:get — return cached result (or null if never scanned)
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_GET, () => libraryCache)
 }

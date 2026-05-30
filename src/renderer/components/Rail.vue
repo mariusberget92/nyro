@@ -18,6 +18,7 @@ const qualityLabel = computed(() => {
 
 const isDashboard = computed(() => route.path === '/dashboard')
 const isPodcasts  = computed(() => route.path === '/podcasts')
+const isLibrary   = computed(() => route.path === '/library')
 const isSettings  = computed(() => route.path === '/settings')
 </script>
 
@@ -62,7 +63,7 @@ const isSettings  = computed(() => route.path === '/settings')
         <span class="nav-label">Podcasts</span>
       </button>
 
-      <button class="nav-btn disabled" title="Library — coming soon" disabled>
+      <button class="nav-btn" :class="{ active: isLibrary }" title="Library" @click="router.push('/library')">
         <div class="nav-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -70,7 +71,6 @@ const isSettings  = computed(() => route.path === '/settings')
           </svg>
         </div>
         <span class="nav-label">Library</span>
-        <span class="soon-dot" />
       </button>
 
     </div>
