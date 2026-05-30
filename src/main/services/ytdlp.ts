@@ -9,8 +9,10 @@ let ytdlpPath: string | null = null
 export function getYtdlpPath(): string {
   if (ytdlpPath) return ytdlpPath
 
-  const resourcesPath = process.resourcesPath || join(app.getAppPath(), '..', 'resources')
-  const bundled = join(resourcesPath, 'resources', YTDLP_BINARY)
+  const resourcesDir = app.isPackaged
+    ? join(process.resourcesPath, 'resources')
+    : join(app.getAppPath(), 'resources')
+  const bundled = join(resourcesDir, YTDLP_BINARY)
   if (existsSync(bundled)) {
     ytdlpPath = bundled
     return ytdlpPath

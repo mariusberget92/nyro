@@ -10,8 +10,10 @@ export function getFFmpegPath(): string {
   if (ffmpegPath) return ffmpegPath
 
   // Check bundled binary first
-  const resourcesPath = process.resourcesPath || join(app.getAppPath(), '..', 'resources')
-  const bundled = join(resourcesPath, 'resources', FFMPEG_BINARY)
+  const resourcesDir = app.isPackaged
+    ? join(process.resourcesPath, 'resources')
+    : join(app.getAppPath(), 'resources')
+  const bundled = join(resourcesDir, FFMPEG_BINARY)
   if (existsSync(bundled)) {
     ffmpegPath = bundled
     return ffmpegPath
