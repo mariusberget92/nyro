@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 
-import type { NyroApi } from '../preload'
-
 declare global {
   interface Window {
-    nyro: NyroApi
+    nyro: {
+      invoke<T = unknown>(channel: string, ...args: unknown[]): Promise<T>
+      on(channel: string, listener: (payload: unknown) => void): () => void
+    }
   }
 }

@@ -32,7 +32,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   ui: DEFAULT_UI,
 
   loadSettings: async () => {
-    const settings = await window.nyro.invoke('settings:get')
+    if (!window.nyro) return
+    const settings = await window.nyro.invoke<AppSettings>('settings:get')
     set({ settings })
   },
 

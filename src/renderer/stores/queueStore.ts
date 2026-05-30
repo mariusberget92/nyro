@@ -28,7 +28,8 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   isPaused: false,
 
   loadQueue: async () => {
-    const items = await window.nyro.invoke('queue:get-all')
+    if (!window.nyro) return
+    const items = await window.nyro.invoke<QueueItem[]>('queue:get-all')
     set({ items })
   },
 
