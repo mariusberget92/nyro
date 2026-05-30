@@ -6,15 +6,18 @@ import ToastContainer from './components/ToastContainer.vue'
 import { useQueueStore } from './stores/queueStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useToastStore } from './stores/toastStore'
+import { useLibraryStore } from './stores/libraryStore'
 import { useIpc } from './composables/useIpc'
 
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
+const libraryStore = useLibraryStore()
 
 onMounted(async () => {
   await queueStore.loadQueue()
   await settingsStore.load()
+  await libraryStore.load()
 })
 
 useIpc('queue:progress', (payload: any) => {

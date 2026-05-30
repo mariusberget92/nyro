@@ -8,7 +8,7 @@ import { IPC_CHANNELS } from '@shared/constants'
 // Must be called before app is ready
 protocol.registerSchemesAsPrivileged([{
   scheme: 'nyro-file',
-  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true }
+  privileges: { secure: true, stream: true, supportFetchAPI: true, bypassCSP: false }
 }])
 
 // Ensure single instance

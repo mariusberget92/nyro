@@ -5,9 +5,25 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, searchEpisodes, getPodcast, extractPodcastId } from '../services/listennotes'
 import { scanLibrary } from '../services/library'
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 let libraryCache: ReturnType<typeof scanLibrary> | null = null
+
+function libraryCachePath() {
+  return join(app.getPath('userData'), 'library-cache.json')
+}
+
+function saveLibraryCache(result: ReturnType<typeof scanLibrary>) {
+  try { writeFileSync(libraryCachePath(), JSON.stringify(result), 'utf8') } catch {}
+}
+
+function loadLibraryCache(): ReturnType<typeof scanLibrary> | null {
+  try {
+    const p = libraryCachePath()
+    if (!existsSync(p)) return null
+    return JSON.parse(readFileSync(p, 'utf8'))
+  } catch { return null }
+}
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
@@ -121,11 +137,15 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     if (!settings.outputFolder) throw new Error('No output folder set.')
     const cacheDir = join(app.getPath('userData'), 'covers')
     libraryCache = scanLibrary(settings.outputFolder, cacheDir)
+    saveLibraryCache(libraryCache)
     return libraryCache
   })
 
-  // library:get — return cached result (or null if never scanned)
-  ipcMain.handle(IPC_CHANNELS.LIBRARY_GET, () => libraryCache)
+  // library:get — return in-memory cache, fall back to disk, or null if never scanned
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_GET, () => {
+    if (!libraryCache) libraryCache = loadLibraryCache()
+    return libraryCache
+  })
 
   // library:get-lrc — read a .lrc sidecar file and return its content
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET_LRC, (_event, lrcPath: string) => {
