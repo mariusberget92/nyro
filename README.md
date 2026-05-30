@@ -10,7 +10,6 @@
 
 <br />
 
-<!-- Drop your own screenshots into docs/ and update these paths -->
 ![Nyro Queue](docs/screenshot-queue.png)
 
 </div>
@@ -57,15 +56,24 @@
 
 ## 📸 Screenshots
 
-| Queue | Library | Podcasts |
-|-------|---------|----------|
-| ![Queue](docs/screenshot-queue.png) | ![Library](docs/screenshot-library.png) | ![Podcasts](docs/screenshot-podcasts.png) |
-
-| Mini Player | Settings |
-|-------------|----------|
-| ![Player](docs/screenshot-player.png) | ![Settings](docs/screenshot-settings.png) |
-
-> 💡 Add your screenshots to a `docs/` folder and update the paths above.
+<table>
+  <tr>
+    <td><img src="docs/screenshot-queue.png" alt="Queue — item downloaded" /></td>
+    <td><img src="docs/screenshot-downloading.png" alt="Queue — actively downloading" /></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Queue — completed item</em></td>
+    <td align="center"><em>Queue — download in progress</em></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshot-podcasts.png" alt="Podcast episode browser" /></td>
+    <td><img src="docs/screenshot-edit.png" alt="Edit track metadata" /></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Podcast episode browser</em></td>
+    <td align="center"><em>Edit track metadata before download</em></td>
+  </tr>
+</table>
 
 ---
 
