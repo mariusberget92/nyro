@@ -35,11 +35,12 @@ export const usePlayerStore = defineStore('player', {
         .filter(Boolean) as { time: number; text: string }[]
     },
 
-    // Index of the currently active lyric line
+    // Index of the currently active lyric line (0.3s look-ahead to compensate for
+    // timeupdate granularity and LRC files that stamp lines slightly late)
     currentLyricIndex: (state): number => {
       const lines = (state as any).lrcLines as { time: number; text: string }[]
       if (!lines.length) return -1
-      const now = state.progress * state.duration
+      const now = state.progress * state.duration + 0.3
       let idx = -1
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].time <= now) idx = i
