@@ -77,6 +77,17 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return result.filePaths[0]
   })
 
+  // dialog:select-file — open native file picker (for cookies.txt)
+  ipcMain.handle(IPC_CHANNELS.DIALOG_SELECT_FILE, async (_event, opts?: { title?: string; filters?: Electron.FileFilter[] }) => {
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      title: opts?.title ?? 'Select File',
+      filters: opts?.filters ?? [{ name: 'All Files', extensions: ['*'] }]
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
+  })
+
   // podcast:search-shows
   ipcMain.handle(IPC_CHANNELS.PODCAST_SEARCH_SHOWS, async (_event, query: string) => {
     const settings = loadSettings()

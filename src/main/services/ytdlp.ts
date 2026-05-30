@@ -43,13 +43,19 @@ export interface VideoMetadata {
  * Fetch metadata for a YouTube URL using yt-dlp --dump-json.
  * Returns an array of VideoMetadata (multiple items for playlists).
  */
-export async function fetchMetadata(url: string, cookiesBrowser?: string): Promise<VideoMetadata[]> {
+function cookieArgs(cookiesFile?: string, cookiesBrowser?: string): string[] {
+  if (cookiesFile) return ['--cookies', cookiesFile]
+  if (cookiesBrowser) return ['--cookies-from-browser', cookiesBrowser]
+  return []
+}
+
+export async function fetchMetadata(url: string, cookiesBrowser?: string, cookiesFile?: string): Promise<VideoMetadata[]> {
   return new Promise((resolve, reject) => {
     const args = [
       '--dump-json',
       '--no-download',
       '--flat-playlist',
-      ...(cookiesBrowser ? ['--cookies-from-browser', cookiesBrowser] : []),
+      ...cookieArgs(cookiesFile, cookiesBrowser),
       url
     ]
 
@@ -91,6 +97,7 @@ export interface DownloadOptions {
   mode?: 'audio' | 'video'
   videoQuality?: '4K' | '1080p' | '720p' | '480p'
   cookiesBrowser?: string
+  cookiesFile?: string
   onProgress?: (percent: number) => void
   signal?: AbortSignal
 }
@@ -114,8 +121,8 @@ function getVideoFormatArg(quality?: '4K' | '1080p' | '720p' | '480p'): string {
  */
 export function downloadMedia(opts: DownloadOptions): Promise<string> {
   return new Promise((resolve, reject) => {
-    const { url, outputTemplate, mode = 'audio', videoQuality, cookiesBrowser, onProgress, signal } = opts
-    const cookiesArgs = cookiesBrowser ? ['--cookies-from-browser', cookiesBrowser] : []
+    const { url, outputTemplate, mode = 'audio', videoQuality, cookiesBrowser, cookiesFile, onProgress, signal } = opts
+    const cookiesArgs = cookieArgs(cookiesFile, cookiesBrowser)
 
     let args: string[]
 

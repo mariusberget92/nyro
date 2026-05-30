@@ -141,7 +141,7 @@ class QueueManager {
 
     let metadataList
     try {
-      metadataList = await fetchMetadata(url, settings.cookiesBrowser || undefined)
+      metadataList = await fetchMetadata(url, settings.cookiesBrowser || undefined, settings.cookiesFile || undefined)
     } catch (err) {
       this.updateItem(placeholderId, { status: 'failed', error: String(err) })
       throw err
@@ -386,6 +386,7 @@ class QueueManager {
         mode: isVideo ? 'video' : 'audio',
         videoQuality: isVideo ? settings.videoQuality : undefined,
         cookiesBrowser: settings.cookiesBrowser || undefined,
+        cookiesFile: settings.cookiesFile || undefined,
         onProgress: (pct) => onProgress(item.id, Math.round(pct * (isVideo ? 0.9 : 0.5)), 'downloading'),
         signal
       })

@@ -63,9 +63,12 @@ const errorDetails = computed(() => {
   let fix = ''
   let hint = ''
 
-  if (/confirm you.re not a bot|not a bot/i.test(raw)) {
-    fix = 'YouTube is blocking the download with bot-detection. This usually fixes itself after a while — try retrying in a few minutes.'
-    hint = 'If it keeps failing, yt-dlp supports passing browser cookies. Update yt-dlp to the latest version first, as YouTube frequently changes their bot detection.'
+  if (/could not copy.+cookie database|copy chrome cookie/i.test(raw)) {
+    fix = 'Chrome is open and has locked its cookie database — yt-dlp cannot read it while Chrome is running.'
+    hint = 'Fix: use Method A in Settings → YouTube Cookies. Export a cookies.txt with the "Get cookies.txt LOCALLY" extension and select the file. It works even when Chrome is open.'
+  } else if (/confirm you.re not a bot|not a bot/i.test(raw)) {
+    fix = 'YouTube is blocking the download with bot-detection. Try retrying in a few minutes.'
+    hint = 'For a permanent fix, go to Settings → YouTube Cookies and configure cookie authentication.'
   } else if (/age.?restricted|age.?gate/i.test(raw)) {
     fix = 'This video is age-restricted and requires a signed-in YouTube account to download.'
     hint = 'yt-dlp can use browser cookies to authenticate. See the Open URL link to verify the video is accessible.'

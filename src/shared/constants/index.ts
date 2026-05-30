@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   DIALOG_SELECT_FOLDER: 'dialog:select-folder',
+  DIALOG_SELECT_FILE:   'dialog:select-file',
   // Podcast
   PODCAST_SEARCH_SHOWS: 'podcast:search-shows',
   PODCAST_SEARCH_EPISODES: 'podcast:search-episodes',

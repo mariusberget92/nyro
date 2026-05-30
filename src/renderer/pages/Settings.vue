@@ -9,6 +9,14 @@ const apiKeySaved = ref(false)
 
 const apiKeyIsSet = computed(() => !!s.settings.listenNotesApiKey)
 
+async function selectCookiesFile() {
+  const path = await window.nyro.invoke<string | null>('dialog:select-file', {
+    title: 'Select cookies.txt',
+    filters: [{ name: 'Cookies file', extensions: ['txt'] }, { name: 'All Files', extensions: ['*'] }]
+  })
+  if (path) s.update({ cookiesFile: path })
+}
+
 async function saveApiKey() {
   apiKeySaving.value = true
   await s.update({ listenNotesApiKey: apiKeyInput.value })
@@ -46,25 +54,45 @@ async function saveApiKey() {
         <span class="section-desc">Get your free API key at <a href="https://www.listennotes.com/api/" target="_blank" class="link">listennotes.com/api</a></span>
       </section>
 
-      <!-- Cookie browser -->
+      <!-- Cookie authentication -->
       <section class="section">
         <label class="section-label">
-          BROWSER COOKIES
-          <span v-if="s.settings.cookiesBrowser" class="key-set-badge">✓ {{ s.settings.cookiesBrowser.toUpperCase() }}</span>
+          YOUTUBE COOKIES
+          <span v-if="s.settings.cookiesFile || s.settings.cookiesBrowser" class="key-set-badge">✓ ACTIVE</span>
         </label>
-        <div class="toggle-group flex-wrap">
-          <button
-            v-for="b in (['chrome','firefox','edge','brave','opera','vivaldi','safari'] as const)"
-            :key="b"
-            :class="['density-btn', { active: s.settings.cookiesBrowser === b }]"
-            @click="s.update({ cookiesBrowser: s.settings.cookiesBrowser === b ? '' : b })"
-          >{{ b[0].toUpperCase() + b.slice(1) }}</button>
+
+        <!-- Method A: cookies.txt file (recommended) -->
+        <div class="cookie-method">
+          <span class="method-label">METHOD A — cookies.txt file <em class="recommended-tag">recommended</em></span>
+          <div class="folder-row">
+            <span class="folder-path">{{ s.settings.cookiesFile || 'No file selected' }}</span>
+            <button class="btn-ghost" @click="selectCookiesFile">Browse</button>
+            <button v-if="s.settings.cookiesFile" class="btn-ghost" @click="s.update({ cookiesFile: '' })">Clear</button>
+          </div>
+          <span class="section-desc">
+            Export a <code>cookies.txt</code> from your browser using the
+            <a href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" class="link">Get cookies.txt LOCALLY</a>
+            extension, then select it here. Works even when the browser is open.
+          </span>
         </div>
-        <span class="section-desc">
-          Pass cookies from your browser to bypass bot-detection or age-gated videos.
-          The browser must be installed and you must be signed in to YouTube.
-          <span v-if="s.settings.cookiesBrowser" class="warn-text">Active — yt-dlp will read cookies from {{ s.settings.cookiesBrowser }}.</span>
-        </span>
+
+        <!-- Method B: live browser (may fail when browser is open) -->
+        <div class="cookie-method" :class="{ dimmed: !!s.settings.cookiesFile }">
+          <span class="method-label">METHOD B — read from browser directly <em v-if="s.settings.cookiesFile" class="disabled-tag">disabled (file takes priority)</em></span>
+          <div class="toggle-group flex-wrap">
+            <button
+              v-for="b in (['chrome','firefox','edge','brave','opera','vivaldi','safari'] as const)"
+              :key="b"
+              :class="['density-btn', { active: s.settings.cookiesBrowser === b }]"
+              :disabled="!!s.settings.cookiesFile"
+              @click="s.update({ cookiesBrowser: s.settings.cookiesBrowser === b ? '' : b })"
+            >{{ b[0].toUpperCase() + b.slice(1) }}</button>
+          </div>
+          <span class="section-desc">
+            yt-dlp reads cookies directly from the browser's profile.
+            <strong class="warn-text">Chrome must be fully closed</strong> — it locks its cookie database while running.
+          </span>
+        </div>
       </section>
 
       <!-- Output folder -->
@@ -262,7 +290,12 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
 }
 .link { color: var(--accent); text-decoration: none; }
 .link:hover { text-decoration: underline; }
-.warn-text { color: var(--warn); display: block; margin-top: 4px; }
+.warn-text { color: var(--warn); }
+.cookie-method { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--bg-2); border-radius: 8px; border: 1px solid var(--line-2); }
+.cookie-method.dimmed { opacity: 0.5; pointer-events: none; }
+.method-label { font-size: 10.5px; font-weight: 700; color: var(--tx-faint); letter-spacing: 0.05em; text-transform: uppercase; }
+.recommended-tag { font-size: 9px; background: rgba(163,190,140,0.15); color: var(--ok); border-radius: 3px; padding: 1px 5px; margin-left: 6px; text-transform: none; font-style: normal; font-weight: 700; letter-spacing: 0; }
+.disabled-tag { font-size: 9px; color: var(--tx-faint); text-transform: none; font-style: normal; margin-left: 6px; }
 .disabled-section { opacity: 0.5; pointer-events: none; }
 .flex-wrap { flex-wrap: wrap; }
 .prefix-row { display: flex; flex-direction: column; gap: 8px; }
