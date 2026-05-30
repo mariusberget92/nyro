@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { QueueItem } from '@shared/types/queue'
-import QueueItemRow from './QueueItem.vue'
+import QueueCard from './QueueItem.vue'
 import { useQueueStore } from '../stores/queueStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { computed } from 'vue'
@@ -21,8 +21,8 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 
 <template>
   <div class="queue-list">
-    <TransitionGroup name="queue-item" tag="div">
-      <QueueItemRow
+    <TransitionGroup name="card-anim" tag="div" class="card-grid">
+      <QueueCard
         v-for="(item, idx) in queueStore.items"
         :key="item.id"
         :item="item"
@@ -46,6 +46,15 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 
 <style scoped>
 .queue-list { display: flex; flex-direction: column; min-height: 100%; }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 16px;
+  align-content: start;
+}
+
 .empty-state {
   flex: 1;
   display: flex;
@@ -57,8 +66,8 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 .empty-title { font-size: 14px; font-weight: 600; color: var(--tx-dim); margin: 0 0 4px; }
 .empty-sub { font-size: 12px; color: var(--tx-faint); margin: 0; }
 
-.queue-item-enter-active { transition: all 0.2s ease-out; }
-.queue-item-leave-active { transition: all 0.15s ease-in; }
-.queue-item-enter-from { opacity: 0; transform: translateY(-8px); }
-.queue-item-leave-to { opacity: 0; transform: translateY(-8px); }
+.card-anim-enter-active { transition: all 0.2s ease-out; }
+.card-anim-leave-active { transition: all 0.15s ease-in; }
+.card-anim-enter-from { opacity: 0; transform: scale(0.92); }
+.card-anim-leave-to { opacity: 0; transform: scale(0.92); }
 </style>
