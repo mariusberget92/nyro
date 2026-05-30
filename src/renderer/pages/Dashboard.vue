@@ -125,12 +125,6 @@ function handleSave(_id: string, _artist: string, _title: string) {
       />
     </div>
 
-    <!-- Footer -->
-    <footer class="toolbar-footer">
-      <span class="footer-info">{{ queueStore.items.length }} {{ queueStore.items.length === 1 ? 'item' : 'items' }}</span>
-      <span class="footer-quality">{{ qualityLabel }}</span>
-    </footer>
-
     <!-- Batch bar -->
     <BatchBar :selected-ids="selectedIds" @clear="selectedIds = new Set()" />
 
@@ -148,7 +142,7 @@ function handleSave(_id: string, _artist: string, _title: string) {
   gap: 8px;
   height: 52px;
   padding: 0 16px;
-  background: linear-gradient(to bottom, var(--bg-1), var(--bg-0));
+  background: var(--bg-0);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
@@ -180,20 +174,16 @@ function handleSave(_id: string, _artist: string, _title: string) {
 .primary-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; height: 32px;
-  background: linear-gradient(135deg, rgba(136,192,208,0.15), rgba(136,192,208,0.08));
-  color: var(--accent);
-  border: 1px solid rgba(136,192,208,0.3);
+  background: var(--accent);
+  color: var(--bg-0);
+  border: none;
   border-radius: 8px;
   font-size: 12px; font-weight: 700; cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.03em;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 0 0 0 var(--accent-glow);
+  font-family: inherit;
+  transition: background 0.15s;
 }
 .primary-btn:hover {
-  background: linear-gradient(135deg, rgba(136,192,208,0.28), rgba(136,192,208,0.16));
-  border-color: var(--accent);
-  box-shadow: 0 0 12px var(--accent-glow);
+  background: #9ecfde;
 }
 
 .form-panel {
@@ -204,19 +194,6 @@ function handleSave(_id: string, _artist: string, _title: string) {
 }
 
 .queue-scroll { flex: 1; overflow-y: auto; }
-
-.toolbar-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  height: 32px; padding: 0 16px;
-  background: var(--bg-1);
-  border-top: 1px solid var(--line);
-  flex-shrink: 0;
-}
-.footer-info { font-size: 10.5px; color: var(--tx-faint); }
-.footer-quality {
-  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700;
-  color: var(--accent); letter-spacing: 0.04em;
-}
 
 .form-slide-enter-active { transition: all 0.18s ease-out; }
 .form-slide-leave-active { transition: all 0.14s ease-in; }

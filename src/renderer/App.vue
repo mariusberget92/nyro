@@ -70,7 +70,6 @@ useIpc('updater:status', (payload: any) => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: inset 4px 0 16px rgba(0,0,0,0.18);
 }
 .main-area {
   flex: 1;
