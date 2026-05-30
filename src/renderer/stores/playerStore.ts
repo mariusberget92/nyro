@@ -53,9 +53,7 @@ export const usePlayerStore = defineStore('player', {
     audioUrl: (state): string | null => {
       const t = state.currentIndex >= 0 ? state.queue[state.currentIndex] : null
       if (!t) return null
-      // Encode the path for the custom protocol (forward-slash separators)
-      const encoded = encodeURIComponent(t.path.replace(/\\/g, '/'))
-      return `nyro-file://${encoded}`
+      return `nyro-file://local?p=${encodeURIComponent(t.path)}`
     },
   },
 

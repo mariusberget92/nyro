@@ -8,7 +8,7 @@ import { IPC_CHANNELS } from '@shared/constants'
 // Must be called before app is ready
 protocol.registerSchemesAsPrivileged([{
   scheme: 'nyro-file',
-  privileges: { secure: true, stream: true, supportFetchAPI: true, bypassCSP: false }
+  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true }
 }])
 
 // Ensure single instance
@@ -81,9 +81,16 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   // Serve local files for the media player via nyro-file:// protocol
+  // URL format: nyro-file://local?p=<encodeURIComponent(absolutePath)>
   protocol.handle('nyro-file', (request) => {
-    const filePath = decodeURIComponent(request.url.slice('nyro-file://'.length))
-    return net.fetch(pathToFileURL(filePath).toString())
+    try {
+      const url = new URL(request.url)
+      const filePath = url.searchParams.get('p')
+      if (!filePath) return new Response('Not found', { status: 404 })
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch {
+      return new Response('Bad request', { status: 400 })
+    }
   })
 
   createWindow()

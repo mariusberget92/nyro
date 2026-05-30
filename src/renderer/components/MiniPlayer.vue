@@ -10,7 +10,7 @@ const activeLine  = ref<HTMLElement | null>(null)
 const coverStyle = computed(() => {
   const t = player.currentTrack
   if (!t?.coverPath) return {}
-  const url = `nyro-file://${encodeURIComponent(t.coverPath.replace(/\\/g, '/'))}`
+  const url = `nyro-file://local?p=${encodeURIComponent(t.coverPath)}`
   return { backgroundImage: `url("${url}")` }
 })
 
