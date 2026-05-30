@@ -1,14 +1,65 @@
-import { app, BrowserWindow, shell, protocol, net } from 'electron'
-import { join } from 'path'
-import { pathToFileURL } from 'url'
+import { app, BrowserWindow, shell, protocol } from 'electron'
+import { join, extname } from 'path'
+import { createReadStream, statSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
 import { checkAndUpdate } from './services/updater'
 import { IPC_CHANNELS } from '@shared/constants'
 
+const MIME: Record<string, string> = {
+  mp3: 'audio/mpeg', mp4: 'video/mp4', m4a: 'audio/mp4',
+  ogg: 'audio/ogg', wav: 'audio/wav', flac: 'audio/flac',
+  mkv: 'video/x-matroska', webm: 'video/webm',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+}
+
+function serveFile(filePath: string, rangeHeader: string | null): Response {
+  const stat = statSync(filePath)
+  const total = stat.size
+  const mime = MIME[extname(filePath).slice(1).toLowerCase()] ?? 'application/octet-stream'
+
+  const toWebStream = (start: number, end: number) => {
+    const ns = createReadStream(filePath, { start, end })
+    return new ReadableStream({
+      start(ctrl) {
+        ns.on('data', chunk => ctrl.enqueue(chunk))
+        ns.on('end', () => ctrl.close())
+        ns.on('error', err => ctrl.error(err))
+      },
+      cancel() { ns.destroy() }
+    })
+  }
+
+  if (rangeHeader) {
+    const m = rangeHeader.match(/bytes=(\d+)-(\d*)/)
+    if (m) {
+      const start = parseInt(m[1])
+      const end = m[2] ? parseInt(m[2]) : total - 1
+      return new Response(toWebStream(start, end), {
+        status: 206,
+        headers: {
+          'Content-Type': mime,
+          'Content-Length': String(end - start + 1),
+          'Content-Range': `bytes ${start}-${end}/${total}`,
+          'Accept-Ranges': 'bytes',
+        }
+      })
+    }
+  }
+
+  return new Response(toWebStream(0, total - 1), {
+    status: 200,
+    headers: {
+      'Content-Type': mime,
+      'Content-Length': String(total),
+      'Accept-Ranges': 'bytes',
+    }
+  })
+}
+
 // Must be called before app is ready
 protocol.registerSchemesAsPrivileged([{
   scheme: 'nyro-file',
-  privileges: { secure: true, stream: true, supportFetchAPI: true, bypassCSP: false }
+  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true }
 }])
 
 // Ensure single instance
@@ -80,10 +131,15 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  // Serve local files for the media player via nyro-file:// protocol
+  // Serve local files — handles Range requests so HTML5 audio seeking works
   protocol.handle('nyro-file', (request) => {
-    const filePath = decodeURIComponent(request.url.slice('nyro-file://'.length))
-    return net.fetch(pathToFileURL(filePath).toString())
+    try {
+      const filePath = new URL(request.url).searchParams.get('p')
+      if (!filePath) return new Response('Not found', { status: 404 })
+      return serveFile(filePath, request.headers.get('range'))
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
   })
 
   createWindow()

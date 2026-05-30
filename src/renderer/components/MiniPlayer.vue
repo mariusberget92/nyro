@@ -10,7 +10,7 @@ const activeLine  = ref<HTMLElement | null>(null)
 const coverStyle = computed(() => {
   const t = player.currentTrack
   if (!t?.coverPath) return {}
-  const url = `nyro-file://${encodeURIComponent(t.coverPath.replace(/\\/g, '/'))}`
+  const url = `nyro-file://local?p=${encodeURIComponent(t.coverPath)}`
   return { backgroundImage: `url("${url}")` }
 })
 
@@ -22,10 +22,11 @@ const timeStr = (sec: number) => {
 }
 
 function scrub(e: MouseEvent) {
+  if (!audio.value || !player.duration) return
   const el = e.currentTarget as HTMLElement
-  const ratio = e.offsetX / el.clientWidth
+  const ratio = Math.max(0, Math.min(1, e.offsetX / el.clientWidth))
+  audio.value.currentTime = ratio * player.duration
   player.setProgress(ratio)
-  if (audio.value) audio.value.currentTime = ratio * player.duration
 }
 
 // Sync audio element with store — flush:'post' ensures audio.value is assigned
@@ -45,13 +46,12 @@ watch(() => player.volume, (v) => {
   if (audio.value) audio.value.volume = v
 })
 
-watch(() => player.progress, (p) => {
-  if (!audio.value || player.duration === 0) return
-  const expected = p * player.duration
-  if (Math.abs(audio.value.currentTime - expected) > 1.5) {
-    audio.value.currentTime = expected
-  }
-})
+// Explicit seek requests from store actions (prev restart, etc.)
+watch(() => player.pendingSeek, (t) => {
+  if (t === null || !audio.value) return
+  audio.value.currentTime = t
+  player.consumeSeek()
+}, { flush: 'post' })
 
 function onTimeUpdate() {
   if (!audio.value || player.duration === 0) return
@@ -228,8 +228,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .mini-player {
   flex-shrink: 0;
-  background: linear-gradient(to top, var(--bg-1), var(--bg-0));
-  border-top: 1px solid var(--line-2);
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
 }
@@ -251,9 +251,8 @@ onBeforeUnmount(() => {
 }
 .scrub-thumb {
   position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 9px; height: 9px; border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.1s;
@@ -310,14 +309,13 @@ onBeforeUnmount(() => {
 .ctrl-btn:hover { color: var(--tx-dim); background: var(--bg-3); }
 .ctrl-btn.active { color: var(--accent); }
 .play-btn {
-  width: 36px; height: 36px; border: none;
+  width: 34px; height: 34px; border: none;
   background: var(--accent); color: var(--bg-0);
   border-radius: 50%; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: box-shadow 0.15s, transform 0.1s;
-  box-shadow: 0 0 12px var(--accent-glow);
+  transition: opacity 0.12s;
 }
-.play-btn:hover { box-shadow: 0 0 20px var(--accent-glow-strong); transform: scale(1.06); }
+.play-btn:hover { opacity: 0.85; }
 
 /* ── Right ──────────────────────────────── */
 .right-section {
@@ -343,7 +341,7 @@ onBeforeUnmount(() => {
 .lyrics-panel {
   max-height: 220px;
   overflow-y: auto;
-  background: linear-gradient(to bottom, var(--bg-0), var(--bg-1));
+  background: var(--bg-1);
   border-top: 1px solid var(--line);
   padding: 16px 0 12px;
   text-align: center;

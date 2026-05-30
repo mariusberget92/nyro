@@ -4,59 +4,32 @@
 
 @layer base {
   :root {
-    /* ── Nord Polar Night ─────────────────────────────── */
-    --nord0:  #2e3440;
-    --nord1:  #3b4252;
-    --nord2:  #434c5e;
-    --nord3:  #4c566a;
+    --bg-canvas: #0c0e13;
+    --bg-0:      #0f1117;
+    --bg-1:      #141720;
+    --bg-2:      #1a1e2a;
+    --bg-3:      #212538;
+    --bg-4:      #272c3f;
 
-    /* ── Nord Snow Storm ──────────────────────────────── */
-    --nord4:  #d8dee9;
-    --nord5:  #e5e9f0;
-    --nord6:  #eceff4;
+    --tx:        #dde3ee;
+    --tx-dim:    #8b95a9;
+    --tx-faint:  #4a5268;
 
-    /* ── Nord Frost ───────────────────────────────────── */
-    --nord7:  #8fbcbb;
-    --nord8:  #88c0d0;
-    --nord9:  #81a1c1;
-    --nord10: #5e81ac;
+    --line:      rgba(255,255,255,0.055);
+    --line-2:    rgba(255,255,255,0.10);
 
-    /* ── Nord Aurora ──────────────────────────────────── */
-    --nord11: #bf616a;   /* red    */
-    --nord12: #d08770;   /* orange */
-    --nord13: #ebcb8b;   /* yellow */
-    --nord14: #a3be8c;   /* green  */
-    --nord15: #b48ead;   /* purple */
+    --accent:         #88c0d0;
+    --accent-2:       #81a1c1;
+    --accent-glow:    rgba(136,192,208,0.08);
+    --accent-glow-strong: rgba(136,192,208,0.16);
 
-    /* ── Semantic aliases ─────────────────────────────── */
-    --bg-canvas: #1b1f2b;
-    --bg-0:      #1f2433;
-    --bg-1:      #252b3b;
-    --bg-2:      #2c3347;
-    --bg-3:      #333c52;
-    --bg-4:      var(--nord1);
-
-    --tx:        var(--nord6);
-    --tx-dim:    var(--nord4);
-    --tx-faint:  var(--nord3);
-
-    --line:      rgba(136, 192, 208, 0.07);
-    --line-2:    rgba(136, 192, 208, 0.16);
-
-    --accent:      var(--nord8);
-    --accent-2:    var(--nord9);
-    --accent-glow: rgba(136, 192, 208, 0.12);
-    --accent-glow-strong: rgba(136, 192, 208, 0.22);
-
-    --conv:  var(--nord15);
-    --warn:  var(--nord13);
-    --ok:    var(--nord14);
-    --bad:   var(--nord11);
+    --ok:   #a3be8c;
+    --warn: #ebcb8b;
+    --bad:  #bf616a;
+    --conv: #b48ead;
 
     --radius: 6px;
-
-    /* ── Rail width (easy to tweak) ─────────────────── */
-    --rail-w: 62px;
+    --rail-w: 56px;
   }
 
   * { box-sizing: border-box; }
@@ -78,8 +51,7 @@
   ::-webkit-scrollbar        { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track  { background: transparent; }
   ::-webkit-scrollbar-thumb  {
-    background: var(--accent);
-    opacity: 0.25;
+    background: rgba(136,192,208,0.3);
     border-radius: 2px;
   }
 

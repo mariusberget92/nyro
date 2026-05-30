@@ -12,7 +12,7 @@ import { fetchLyrics } from '../services/lyrics'
 import { buildFilename, sanitizeFilenameComponent } from '../services/filename'
 import { loadQueue, saveQueue, loadSettings } from '../storage/store'
 import { httpDownload } from '../services/httpDownload'
-import { getEpisode } from '../services/listennotes'
+import { getEpisode } from '../services/taddy'
 
 function moveFile(src: string, dest: string): void {
   try {
@@ -82,26 +82,23 @@ class QueueManager {
 
   async addPodcastEpisode(episodeId: string): Promise<QueueItem> {
     const settings = loadSettings()
-    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set')
-    const ep = await getEpisode(episodeId, settings.listenNotesApiKey)
+    if (!settings.taddyUserId || !settings.taddyApiKey) throw new Error('Taddy credentials not set')
+    const ep = await getEpisode(episodeId, settings.taddyUserId, settings.taddyApiKey)
     const item: QueueItem = {
       id: uuidv4(),
-      url: ep.audio,
+      url: ep.audioUrl,
       source: 'podcast',
       status: 'pending',
       progress: 0,
       addedAt: Date.now(),
-      podcastShowTitle: ep.podcast.title,
       metadata: {
-        title: ep.title,
-        artist: ep.podcast.publisher,
-        album: ep.podcast.title,
-        duration: ep.audio_length_sec,
-        thumbnailUrl: ep.image,
-        videoId: ep.id,
-        podcastShow: ep.podcast.title,
-        podcastShowId: ep.podcast.id,
-        audioUrl: ep.audio
+        title: ep.name,
+        artist: '',
+        album: '',
+        duration: ep.duration,
+        thumbnailUrl: ep.imageUrl,
+        videoId: ep.uuid,
+        audioUrl: ep.audioUrl
       }
     }
     this.queue.push(item)

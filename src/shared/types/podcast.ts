@@ -1,38 +1,38 @@
-export interface LNEpisode {
-  id: string
-  title: string
-  audio: string
-  audio_length_sec: number
-  pub_date_ms: number
+// Taddy GraphQL API types
+
+export interface TaddyEpisode {
+  uuid: string
+  name: string
   description: string
-  image: string
-  podcast: { id: string; title: string; publisher: string }
+  audioUrl: string
+  imageUrl?: string
+  duration?: number        // seconds
+  datePublished?: number   // epoch seconds
+  episodeNumber?: number
+  seasonNumber?: number
 }
 
-export interface LNPodcast {
-  id: string
-  title: string
-  publisher: string
-  image: string
-  description: string
-  total_episodes: number
-  episodes: LNEpisode[]
-  next_episode_pub_date: number | null
+export interface TaddySeries {
+  uuid: string
+  name: string
+  authorName?: string
+  description?: string
+  imageUrl?: string
+  totalEpisodesCount?: number
+  rssUrl?: string
+  episodes: TaddyEpisode[]
+  // pagination
+  page: number
+  hasMore: boolean
 }
 
-export interface LNSearchResult {
-  results: Array<{
-    id: string
-    title_original: string
-    publisher_original: string
-    image: string
-    description_original: string
-    total_episodes?: number
-    audio?: string
-    audio_length_sec?: number
-    pub_date_ms?: number
-    podcast?: { id: string; title_original: string; publisher_original: string }
+export interface TaddySearchResult {
+  series: Array<{
+    uuid: string
+    name: string
+    authorName?: string
+    description?: string
+    imageUrl?: string
+    totalEpisodesCount?: number
   }>
-  next_offset: number
-  total: number
 }

@@ -44,7 +44,7 @@ const filteredVideos = computed(() =>
 
 function coverUrl(path?: string) {
   if (!path) return null
-  return `nyro-file://${encodeURIComponent(path.replace(/\\/g, '/'))}`
+  return `nyro-file://local?p=${encodeURIComponent(path)}`
 }
 
 function playAlbum(album: LibraryAlbum, startIdx = 0) {

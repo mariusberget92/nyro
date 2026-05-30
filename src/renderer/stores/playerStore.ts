@@ -14,8 +14,9 @@ export const usePlayerStore = defineStore('player', {
     shuffle: false,
     repeat: 'off' as RepeatMode,
     shuffleOrder: [] as number[],
-    lrcRaw: null as string | null,        // raw LRC file content
+    lrcRaw: null as string | null,
     showLyrics: false,
+    pendingSeek: null as number | null,  // seconds; consumed by MiniPlayer
   }),
 
   getters: {
@@ -35,11 +36,12 @@ export const usePlayerStore = defineStore('player', {
         .filter(Boolean) as { time: number; text: string }[]
     },
 
-    // Index of the currently active lyric line
+    // Index of the currently active lyric line (0.3s look-ahead to compensate for
+    // timeupdate granularity and LRC files that stamp lines slightly late)
     currentLyricIndex: (state): number => {
       const lines = (state as any).lrcLines as { time: number; text: string }[]
       if (!lines.length) return -1
-      const now = state.progress * state.duration
+      const now = state.progress * state.duration + 0.3
       let idx = -1
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].time <= now) idx = i
@@ -51,9 +53,7 @@ export const usePlayerStore = defineStore('player', {
     audioUrl: (state): string | null => {
       const t = state.currentIndex >= 0 ? state.queue[state.currentIndex] : null
       if (!t) return null
-      // Encode the path for the custom protocol (forward-slash separators)
-      const encoded = encodeURIComponent(t.path.replace(/\\/g, '/'))
-      return `nyro-file://${encoded}`
+      return `nyro-file://local?p=${encodeURIComponent(t.path)}`
     },
   },
 
@@ -87,7 +87,7 @@ export const usePlayerStore = defineStore('player', {
     },
 
     async prev() {
-      if (this.progress > 0.05) { this.progress = 0; return }
+      if (this.progress > 0.05) { this.pendingSeek = 0; this.progress = 0; return }
       const prevIdx = this._prevIndex()
       if (prevIdx === -1) return
       this.currentIndex = prevIdx
@@ -121,6 +121,7 @@ export const usePlayerStore = defineStore('player', {
     },
 
     setProgress(p: number) { this.progress = Math.max(0, Math.min(1, p)) },
+    consumeSeek(): number | null { const s = this.pendingSeek; this.pendingSeek = null; return s },
     setDuration(d: number) { this.duration = d },
     setVolume(v: number)   { this.volume = Math.max(0, Math.min(1, v)) },
 

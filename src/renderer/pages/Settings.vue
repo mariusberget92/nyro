@@ -3,11 +3,20 @@ import { ref, computed } from 'vue'
 import { useSettingsStore } from '../stores/settingsStore'
 const s = useSettingsStore()
 
-const apiKeyInput = ref(s.settings.listenNotesApiKey || '')
-const apiKeySaving = ref(false)
-const apiKeySaved = ref(false)
+const taddyUserId = ref(s.settings.taddyUserId || '')
+const taddyApiKey = ref(s.settings.taddyApiKey || '')
+const taddySaving = ref(false)
+const taddySaved = ref(false)
 
-const apiKeyIsSet = computed(() => !!s.settings.listenNotesApiKey)
+const taddyIsSet = computed(() => !!s.settings.taddyUserId && !!s.settings.taddyApiKey)
+
+async function saveTaddy() {
+  taddySaving.value = true
+  await s.update({ taddyUserId: taddyUserId.value, taddyApiKey: taddyApiKey.value })
+  taddySaving.value = false
+  taddySaved.value = true
+  setTimeout(() => { taddySaved.value = false }, 2000)
+}
 
 async function selectCookiesFile() {
   const path = await window.nyro.invoke<string | null>('dialog:select-file', {
@@ -34,24 +43,22 @@ async function saveApiKey() {
 
     <div class="settings-body">
 
-      <!-- ListenNotes API Key -->
+      <!-- Taddy API -->
       <section class="section">
         <label class="section-label">
-          LISTENNOTES API KEY
-          <span v-if="apiKeyIsSet" class="key-set-badge">✓ SET</span>
+          TADDY API
+          <span v-if="taddyIsSet" class="key-set-badge">✓ SET</span>
         </label>
         <div class="folder-row">
-          <input
-            v-model="apiKeyInput"
-            type="password"
-            class="api-key-input"
-            placeholder="Paste your API key here"
-          />
-          <button class="btn-ghost" :disabled="apiKeySaving" @click="saveApiKey">
-            {{ apiKeySaved ? 'Saved!' : 'Save' }}
+          <input v-model="taddyUserId" type="text" class="api-key-input" placeholder="User ID" />
+        </div>
+        <div class="folder-row" style="margin-top:6px">
+          <input v-model="taddyApiKey" type="password" class="api-key-input" placeholder="API Key" />
+          <button class="btn-ghost" :disabled="taddySaving" @click="saveTaddy">
+            {{ taddySaved ? 'Saved!' : 'Save' }}
           </button>
         </div>
-        <span class="section-desc">Get your free API key at <a href="https://www.listennotes.com/api/" target="_blank" class="link">listennotes.com/api</a></span>
+        <span class="section-desc">Get your credentials at <a href="https://taddy.org/signup/developers" target="_blank" class="link">taddy.org/signup/developers</a> · 300 requests/month on the free tier</span>
       </section>
 
       <!-- Cookie authentication -->
