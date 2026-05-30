@@ -4,6 +4,20 @@ import { usePlayerStore } from '../stores/playerStore'
 
 const player = usePlayerStore()
 const audio = ref<HTMLAudioElement | null>(null)
+const showSleepPicker = ref(false)
+const sleepCustomMin = ref(30)
+
+// Sleep timer display — remaining time as "Xh Ym" or "Xm"
+const sleepRemaining = computed(() => {
+  if (!player.sleepEndsAt) return null
+  const diff = Math.max(0, player.sleepEndsAt - Date.now())
+  const total = Math.ceil(diff / 60000)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+})
+
+let sleepTick: ReturnType<typeof setInterval> | null = null
 const lyricsPanel = ref<HTMLElement | null>(null)
 const activeLine  = ref<HTMLElement | null>(null)
 
@@ -77,10 +91,12 @@ watch(() => (player as any).currentLyricIndex, () => {
 
 onMounted(() => {
   if (audio.value) audio.value.volume = player.volume
+  sleepTick = setInterval(() => player.tickSleepTimer(), 5000)
 })
 
 onBeforeUnmount(() => {
   audio.value?.pause()
+  if (sleepTick) clearInterval(sleepTick)
 })
 </script>
 
@@ -202,11 +218,51 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- Time + Volume -->
+      <!-- Time + Volume + Sleep -->
       <div class="right-section">
-        <span class="time-label">
-          {{ timeStr(player.progress * player.duration) }} / {{ timeStr(player.duration) }}
-        </span>
+        <div class="top-row">
+          <span class="time-label">
+            {{ timeStr(player.progress * player.duration) }} / {{ timeStr(player.duration) }}
+          </span>
+
+          <!-- Sleep timer button -->
+          <div class="sleep-wrap">
+            <button
+              class="ctrl-btn sleep-btn"
+              :class="{ active: !!player.sleepEndsAt }"
+              :title="player.sleepEndsAt ? `Sleep in ${sleepRemaining}` : 'Sleep timer'"
+              @click.stop="showSleepPicker = !showSleepPicker"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+              <span v-if="sleepRemaining" class="sleep-label">{{ sleepRemaining }}</span>
+            </button>
+
+            <!-- Sleep picker popover -->
+            <Transition name="pop">
+              <div v-if="showSleepPicker" class="sleep-popover" @click.stop>
+                <div class="sleep-popover-title">Sleep timer</div>
+                <div class="sleep-presets">
+                  <button v-for="m in [15, 30, 45, 60, 90, 120]" :key="m"
+                    class="sleep-preset"
+                    :class="{ active: player.sleepEndsAt && Math.round((player.sleepEndsAt - Date.now()) / 60000) === m }"
+                    @click="player.setSleepTimer(m); showSleepPicker = false"
+                  >{{ m >= 60 ? `${m/60}h` : `${m}m` }}</button>
+                </div>
+                <div class="sleep-custom-row">
+                  <input v-model.number="sleepCustomMin" type="number" min="1" max="480" class="sleep-custom-input" />
+                  <span class="sleep-custom-unit">min</span>
+                  <button class="sleep-set-btn" @click="player.setSleepTimer(sleepCustomMin); showSleepPicker = false">Set</button>
+                </div>
+                <button v-if="player.sleepEndsAt" class="sleep-cancel-btn" @click="player.clearSleepTimer(); showSleepPicker = false">
+                  Cancel timer
+                </button>
+              </div>
+            </Transition>
+          </div>
+        </div>
+
         <div class="volume-row">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -320,7 +376,10 @@ onBeforeUnmount(() => {
 /* ── Right ──────────────────────────────── */
 .right-section {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-  width: 160px; flex-shrink: 0;
+  width: 200px; flex-shrink: 0;
+}
+.top-row {
+  display: flex; align-items: center; gap: 8px; justify-content: flex-end; width: 100%;
 }
 .time-label {
   font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tx-faint);
@@ -328,6 +387,71 @@ onBeforeUnmount(() => {
 .volume-row {
   display: flex; align-items: center; gap: 5px; color: var(--tx-faint);
 }
+
+/* ── Sleep timer ──────────────────────── */
+.sleep-wrap { position: relative; }
+.sleep-btn {
+  display: flex; align-items: center; gap: 4px;
+  width: auto; padding: 0 6px;
+}
+.sleep-label {
+  font-size: 9px; font-family: 'JetBrains Mono', monospace;
+  color: var(--accent); white-space: nowrap;
+}
+.sleep-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 200;
+}
+.sleep-popover-title {
+  font-size: 11px; font-weight: 700; color: var(--tx-dim);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.sleep-presets {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.sleep-preset {
+  padding: 5px 0; border-radius: 7px; border: 1px solid var(--line-2);
+  background: var(--bg-2); color: var(--tx-dim); font-size: 12px;
+  font-weight: 600; cursor: pointer; text-align: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.sleep-preset:hover { background: var(--bg-3); color: var(--tx); }
+.sleep-preset.active { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border-color: var(--accent); }
+.sleep-custom-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.sleep-custom-input {
+  width: 60px; background: var(--bg-2); border: 1px solid var(--line-2);
+  border-radius: 6px; color: var(--tx); font-size: 12px; padding: 4px 7px;
+  outline: none; text-align: center;
+}
+.sleep-custom-input:focus { border-color: var(--accent); }
+.sleep-custom-unit { font-size: 11px; color: var(--tx-faint); flex: 1; }
+.sleep-set-btn {
+  padding: 4px 12px; border-radius: 6px; border: none;
+  background: var(--accent); color: var(--bg-0);
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: opacity 0.12s;
+}
+.sleep-set-btn:hover { opacity: 0.85; }
+.sleep-cancel-btn {
+  padding: 5px 0; border-radius: 7px; border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
+  background: color-mix(in srgb, var(--bad) 10%, transparent); color: var(--bad);
+  font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
+  transition: background 0.12s;
+}
+.sleep-cancel-btn:hover { background: color-mix(in srgb, var(--bad) 20%, transparent); }
+.pop-enter-active, .pop-leave-active { transition: opacity 0.15s, transform 0.15s; }
+.pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(6px) scale(0.97); }
 .vol-slider {
   -webkit-appearance: none; width: 72px; height: 3px;
   background: var(--bg-3); border-radius: 2px; cursor: pointer; outline: none;
