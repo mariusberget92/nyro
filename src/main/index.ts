@@ -5,6 +5,12 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { checkAndUpdate } from './services/updater'
 import { IPC_CHANNELS } from '@shared/constants'
 
+// Must be called before app is ready
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'nyro-file',
+  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true }
+}])
+
 // Ensure single instance
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
