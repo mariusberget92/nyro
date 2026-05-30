@@ -17,6 +17,7 @@ export interface IpcInvokeChannels {
   'queue:resume': () => Promise<void>
   'queue:stop': () => Promise<void>
   'queue:clear-completed': () => Promise<void>
+  'queue:clear-all': () => Promise<void>
   'queue:get-all': () => Promise<QueueItem[]>
   'settings:get': () => Promise<AppSettings>
   'settings:set': (settings: Partial<AppSettings>) => Promise<void>

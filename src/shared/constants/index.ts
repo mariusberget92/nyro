@@ -10,6 +10,7 @@ export const IPC_CHANNELS = {
   QUEUE_RESUME: 'queue:resume',
   QUEUE_STOP: 'queue:stop',
   QUEUE_CLEAR_COMPLETED: 'queue:clear-completed',
+  QUEUE_CLEAR_ALL: 'queue:clear-all',
   QUEUE_GET_ALL: 'queue:get-all',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',

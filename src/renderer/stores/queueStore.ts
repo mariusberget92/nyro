@@ -48,6 +48,12 @@ export const useQueueStore = defineStore('queue', {
       await window.nyro.invoke('queue:clear-completed')
       this.items = this.items.filter(i => !['completed', 'cancelled', 'failed'].includes(i.status))
     },
+    async clearAll() {
+      await window.nyro.invoke('queue:clear-all')
+      this.items = []
+      this.isProcessing = false
+      this.isPaused = false
+    },
     updateProgress(id: string, progress: number, status: QueueStatus) {
       const item = this.items.find(i => i.id === id)
       if (item) { item.progress = progress; item.status = status }

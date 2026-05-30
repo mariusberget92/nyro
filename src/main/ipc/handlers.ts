@@ -42,6 +42,11 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     queueManager.clearCompleted()
   })
 
+  // queue:clear-all — remove every item (stops active download first)
+  ipcMain.handle(IPC_CHANNELS.QUEUE_CLEAR_ALL, () => {
+    queueManager.clearAll()
+  })
+
   // queue:get-all — return current queue state
   ipcMain.handle(IPC_CHANNELS.QUEUE_GET_ALL, () => {
     return queueManager.getQueue()

@@ -14,6 +14,25 @@ import { loadQueue, saveQueue, loadSettings } from '../storage/store'
 import { httpDownload } from '../services/httpDownload'
 import { getEpisode } from '../services/listennotes'
 
+function parseArtistTitle(videoTitle: string): { artist: string; title: string } {
+  // Strip common suffixes like "(Official Video)", "[HD]", "(Lyrics)", etc.
+  const cleaned = videoTitle
+    .replace(/\s*[\[(][^\])\[]*(?:official|video|audio|lyrics?|hd|4k|mv|music\s*video|visualizer|explicit)[^\])]*[\])]/gi, '')
+    .trim()
+
+  // Split on " - " or " – " (en-dash) separators
+  const sep = /\s+[-–]\s+/
+  const idx = cleaned.search(sep)
+  if (idx > 0) {
+    const artist = cleaned.slice(0, idx).trim()
+    const title = cleaned.slice(idx).replace(sep, '').trim()
+    return { artist, title }
+  }
+
+  // No separator — put everything in title, leave artist blank
+  return { artist: '', title: cleaned || videoTitle }
+}
+
 type ProgressCallback = (id: string, progress: number, status: QueueStatus) => void
 
 class QueueManager {
@@ -78,6 +97,14 @@ class QueueManager {
       throw new Error('Invalid URL')
     }
 
+    if (this.isYouTubeRadioMix(url)) {
+      throw new Error(
+        'This is a YouTube Radio/Mix playlist (list=RD…) which auto-generates hundreds of songs.\n' +
+        'For albums, use a YouTube Music link instead:\n' +
+        'music.youtube.com/playlist?list=OLAK5uy_…'
+      )
+    }
+
     const settings = loadSettings()
 
     // Create a placeholder item while fetching metadata
@@ -110,6 +137,8 @@ class QueueManager {
         ?? (meta.release_date ? parseInt(meta.release_date.substring(0, 4)) : undefined)
         ?? (meta.upload_date ? parseInt(meta.upload_date.substring(0, 4)) : undefined)
 
+      const { artist, title } = parseArtistTitle(meta.title || '')
+
       return {
         id: uuidv4(),
         url: meta.webpage_url || url,
@@ -118,8 +147,8 @@ class QueueManager {
         addedAt: Date.now(),
         downloadMode: settings.downloadMode,
         metadata: {
-          title: meta.title || 'Unknown Title',
-          artist: meta.uploader || 'Unknown Artist',
+          title: title || meta.title || 'Unknown Title',
+          artist: artist || 'Unknown Artist',
           album: meta.album || '',
           year: isNaN(year as number) ? undefined : year,
           duration: meta.duration || 0,
@@ -183,6 +212,25 @@ class QueueManager {
   clearCompleted(): void {
     this.queue = this.queue.filter((i) => !['completed', 'cancelled', 'failed'].includes(i.status))
     this.persist()
+  }
+
+  clearAll(): void {
+    this.currentAbortController?.abort()
+    this.currentAbortController = null
+    this.isProcessing = false
+    this.isPaused = false
+    this.queue = []
+    this.persist()
+  }
+
+  private isYouTubeRadioMix(url: string): boolean {
+    try {
+      const u = new URL(url.startsWith('http') ? url : `https://${url}`)
+      const list = u.searchParams.get('list') ?? ''
+      return list.startsWith('RD') || list.startsWith('RDMM') || list.startsWith('RDCLAK')
+    } catch {
+      return false
+    }
   }
 
   private isValidYouTubeUrl(url: string): boolean {

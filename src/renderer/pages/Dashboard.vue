@@ -65,6 +65,20 @@ function handleSave(_id: string, _artist: string, _title: string) {
           </svg>
         </button>
 
+        <!-- Clear all -->
+        <button
+          v-if="queueStore.items.length > 0"
+          class="icon-btn danger"
+          title="Clear all"
+          @click="queueStore.clearAll()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+        </button>
+
         <div class="sep" />
 
         <!-- Run queue -->
