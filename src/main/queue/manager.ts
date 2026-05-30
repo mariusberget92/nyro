@@ -161,7 +161,7 @@ class QueueManager {
         downloadMode: settings.downloadMode,
         metadata: {
           title: title || meta.title || 'Unknown Title',
-          artist: artist || 'Unknown Artist',
+          artist: artist || meta.uploader || 'Unknown Artist',
           album: meta.album || '',
           year: isNaN(year as number) ? undefined : year,
           duration: meta.duration || 0,
