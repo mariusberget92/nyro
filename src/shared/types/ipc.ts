@@ -6,6 +6,7 @@ import type {
   QueueErrorPayload
 } from './queue'
 import type { AppSettings } from './settings'
+import type { LNSearchResult, LNPodcast } from './podcast'
 
 // Renderer → Main (invoke channels)
 export interface IpcInvokeChannels {
@@ -20,6 +21,10 @@ export interface IpcInvokeChannels {
   'settings:get': () => Promise<AppSettings>
   'settings:set': (settings: Partial<AppSettings>) => Promise<void>
   'dialog:select-folder': () => Promise<string | null>
+  'podcast:search-shows': (query: string) => Promise<LNSearchResult>
+  'podcast:search-episodes': (query: string) => Promise<LNSearchResult>
+  'podcast:get-show': (idOrUrl: string, nextPubDate?: number) => Promise<LNPodcast>
+  'podcast:add-episode': (episodeId: string) => Promise<QueueItem>
 }
 
 // Main → Renderer (on channels)

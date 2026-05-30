@@ -11,6 +11,8 @@ import { writeID3Tags } from '../services/metadata'
 import { fetchLyrics } from '../services/lyrics'
 import { buildFilename, sanitizeFilenameComponent } from '../services/filename'
 import { loadQueue, saveQueue, loadSettings } from '../storage/store'
+import { httpDownload } from '../services/httpDownload'
+import { getEpisode } from '../services/listennotes'
 
 type ProgressCallback = (id: string, progress: number, status: QueueStatus) => void
 
@@ -39,6 +41,36 @@ class QueueManager {
 
   getQueue(): QueueItem[] {
     return [...this.queue]
+  }
+
+  async addPodcastEpisode(episodeId: string): Promise<QueueItem> {
+    const settings = loadSettings()
+    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set')
+    const ep = await getEpisode(episodeId, settings.listenNotesApiKey)
+    const item: QueueItem = {
+      id: uuidv4(),
+      url: ep.audio,
+      source: 'podcast',
+      status: 'pending',
+      progress: 0,
+      addedAt: Date.now(),
+      podcastShowTitle: ep.podcast.title,
+      metadata: {
+        title: ep.title,
+        artist: ep.podcast.publisher,
+        album: ep.podcast.title,
+        duration: ep.audio_length_sec,
+        thumbnailUrl: ep.image,
+        videoId: ep.id,
+        podcastShow: ep.podcast.title,
+        podcastShowId: ep.podcast.id,
+        audioUrl: ep.audio
+      }
+    }
+    this.queue.push(item)
+    this.persist()
+    this.emitStatusChanged(item.id, 'pending')
+    return item
   }
 
   async addUrl(url: string): Promise<QueueItem[]> {
@@ -178,7 +210,85 @@ class QueueManager {
     }
   }
 
+  private async processPodcastItem(item: QueueItem, signal: AbortSignal): Promise<void> {
+    const settings = loadSettings()
+    const tempDir = tmpdir()
+    const meta = item.metadata
+
+    const onProgress: ProgressCallback = (id, progress, status) => {
+      this.updateItem(id, { progress, status })
+      this.emitProgress(id, progress, status)
+    }
+
+    try {
+      if (!meta?.audioUrl) throw new Error('Podcast episode missing audio URL')
+
+      // Step 1: Download MP3
+      this.updateItem(item.id, { status: 'downloading', progress: 0 })
+      this.emitStatusChanged(item.id, 'downloading')
+
+      const tempMp3 = join(tempDir, `nyro-${item.id}.mp3`)
+      await httpDownload({
+        url: meta.audioUrl,
+        outputPath: tempMp3,
+        onProgress: (pct) => onProgress(item.id, pct, 'downloading'),
+        signal
+      })
+
+      if (signal.aborted) {
+        this.updateItem(item.id, { status: 'cancelled', progress: 0 })
+        try { unlinkSync(tempMp3) } catch { /* ignore */ }
+        return
+      }
+
+      // Step 2: Write ID3 tags
+      this.updateItem(item.id, { status: 'tagging', progress: 95 })
+      this.emitStatusChanged(item.id, 'tagging')
+
+      await writeID3Tags(tempMp3, {
+        title: meta.title,
+        artist: meta.artist,
+        album: meta.album
+      })
+
+      // Step 3: Move to Podcasts/{showName}/
+      const baseFolder = settings.outputFolder
+      const safeShow = sanitizeFilenameComponent(meta.podcastShow || 'Unknown Show')
+      const targetFolder = join(baseFolder, 'Podcasts', safeShow)
+
+      if (!existsSync(targetFolder)) {
+        mkdirSync(targetFolder, { recursive: true })
+      }
+
+      const safeTitle = sanitizeFilenameComponent(meta.title)
+      const finalPath = join(targetFolder, `${safeTitle}.mp3`)
+      renameSync(tempMp3, finalPath)
+
+      this.updateItem(item.id, {
+        status: 'completed',
+        progress: 100,
+        outputPath: finalPath,
+        completedAt: Date.now()
+      })
+      this.emitStatusChanged(item.id, 'completed')
+      this.emitCompleted(item.id, finalPath)
+    } catch (err) {
+      if (signal.aborted) {
+        this.updateItem(item.id, { status: 'cancelled', progress: 0 })
+        return
+      }
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      this.updateItem(item.id, { status: 'failed', error: errorMsg, progress: 0 })
+      this.emitStatusChanged(item.id, 'failed')
+      this.emitError(item.id, errorMsg)
+    }
+  }
+
   private async processItem(item: QueueItem, signal: AbortSignal): Promise<void> {
+    if (item.source === 'podcast') {
+      return this.processPodcastItem(item, signal)
+    }
+
     const settings = loadSettings()
     const tempDir = tmpdir()
 

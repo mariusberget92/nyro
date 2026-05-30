@@ -14,6 +14,11 @@ export const IPC_CHANNELS = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   DIALOG_SELECT_FOLDER: 'dialog:select-folder',
+  // Podcast
+  PODCAST_SEARCH_SHOWS: 'podcast:search-shows',
+  PODCAST_SEARCH_EPISODES: 'podcast:search-episodes',
+  PODCAST_GET_SHOW: 'podcast:get-show',
+  PODCAST_ADD_EPISODE: 'podcast:add-episode',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',

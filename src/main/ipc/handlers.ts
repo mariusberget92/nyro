@@ -2,6 +2,7 @@ import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
+import { searchPodcasts, searchEpisodes, getPodcast, extractPodcastId } from '../services/listennotes'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
@@ -64,5 +65,32 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     })
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths[0]
+  })
+
+  // podcast:search-shows
+  ipcMain.handle(IPC_CHANNELS.PODCAST_SEARCH_SHOWS, async (_event, query: string) => {
+    const settings = loadSettings()
+    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
+    return searchPodcasts(query, settings.listenNotesApiKey)
+  })
+
+  // podcast:search-episodes
+  ipcMain.handle(IPC_CHANNELS.PODCAST_SEARCH_EPISODES, async (_event, query: string) => {
+    const settings = loadSettings()
+    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
+    return searchEpisodes(query, settings.listenNotesApiKey)
+  })
+
+  // podcast:get-show
+  ipcMain.handle(IPC_CHANNELS.PODCAST_GET_SHOW, async (_event, idOrUrl: string, nextPubDate?: number) => {
+    const settings = loadSettings()
+    if (!settings.listenNotesApiKey) throw new Error('ListenNotes API key not set. Add it in Settings.')
+    const id = extractPodcastId(idOrUrl)
+    return getPodcast(id, settings.listenNotesApiKey, nextPubDate)
+  })
+
+  // podcast:add-episode
+  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string) => {
+    return queueManager.addPodcastEpisode(episodeId)
   })
 }

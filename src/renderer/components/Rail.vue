@@ -17,6 +17,7 @@ const outputFolderName = computed(() => {
 })
 
 const isDashboard = computed(() => route.path === '/dashboard')
+const isPodcasts = computed(() => route.path === '/podcasts')
 const isSettings = computed(() => route.path === '/settings')
 </script>
 
@@ -40,6 +41,21 @@ const isSettings = computed(() => route.path === '/settings')
           <path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
         </svg>
         <span v-if="activeCount > 0" class="badge">{{ activeCount > 99 ? '99+' : activeCount }}</span>
+      </button>
+
+      <!-- Podcasts -->
+      <button
+        class="nav-btn"
+        :class="{ active: isPodcasts }"
+        title="Podcasts"
+        @click="router.push('/podcasts')"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+          <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
       </button>
 
       <!-- Settings -->

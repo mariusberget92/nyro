@@ -6,6 +6,7 @@ export interface AppSettings {
   filenameFormat: 'artist-title' | 'title-artist' | 'title'
   fetchLyrics: boolean
   embedThumbnail: boolean
+  listenNotesApiKey: string
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -15,5 +16,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   audioQuality: '320',
   filenameFormat: 'artist-title',
   fetchLyrics: true,
-  embedThumbnail: false
+  embedThumbnail: false,
+  listenNotesApiKey: ''
 }

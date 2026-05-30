@@ -17,11 +17,16 @@ export interface QueueItemMetadata {
   duration: number
   thumbnailUrl?: string
   videoId: string
+  podcastShow?: string
+  podcastShowId?: string
+  audioUrl?: string
 }
 
 export interface QueueItem {
   id: string
   url: string
+  source?: 'youtube' | 'podcast'
+  podcastShowTitle?: string
   status: QueueStatus
   progress: number
   metadata?: QueueItemMetadata

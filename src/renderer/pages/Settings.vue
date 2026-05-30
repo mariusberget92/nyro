@@ -1,6 +1,21 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useSettingsStore } from '../stores/settingsStore'
 const s = useSettingsStore()
+
+const apiKeyInput = ref(s.settings.listenNotesApiKey || '')
+const apiKeySaving = ref(false)
+const apiKeySaved = ref(false)
+
+const apiKeyIsSet = computed(() => !!s.settings.listenNotesApiKey)
+
+async function saveApiKey() {
+  apiKeySaving.value = true
+  await s.update({ listenNotesApiKey: apiKeyInput.value })
+  apiKeySaving.value = false
+  apiKeySaved.value = true
+  setTimeout(() => { apiKeySaved.value = false }, 2000)
+}
 </script>
 
 <template>
@@ -10,6 +25,26 @@ const s = useSettingsStore()
     </header>
 
     <div class="settings-body">
+
+      <!-- ListenNotes API Key -->
+      <section class="section">
+        <label class="section-label">
+          LISTENNOTES API KEY
+          <span v-if="apiKeyIsSet" class="key-set-badge">✓ SET</span>
+        </label>
+        <div class="folder-row">
+          <input
+            v-model="apiKeyInput"
+            type="password"
+            class="api-key-input"
+            placeholder="Paste your API key here"
+          />
+          <button class="btn-ghost" :disabled="apiKeySaving" @click="saveApiKey">
+            {{ apiKeySaved ? 'Saved!' : 'Save' }}
+          </button>
+        </div>
+        <span class="section-desc">Get your free API key at <a href="https://www.listennotes.com/api/" target="_blank" class="link">listennotes.com/api</a></span>
+      </section>
 
       <!-- Output folder -->
       <section class="section">
@@ -147,6 +182,20 @@ const s = useSettingsStore()
 .toggle-btn.active .toggle-knob { transform: translateX(18px); }
 .info-value { font-size: 12.5px; color: var(--tx-dim); }
 code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--tx-dim); }
+.api-key-input {
+  flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--tx); background: var(--bg-2); padding: 8px 12px;
+  border-radius: 8px; border: 1px solid var(--line-2); outline: none;
+}
+.api-key-input:focus { border-color: var(--accent); }
+.key-set-badge {
+  display: inline-block; margin-left: 8px;
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(34, 197, 94, 0.15); color: #22c55e;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
+}
+.link { color: var(--accent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
 .disabled-section { opacity: 0.5; pointer-events: none; }
 .coming-soon {
   display: inline-block; margin-left: 6px;
