@@ -118,21 +118,6 @@ const errorDetails = computed(() => {
         <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
       </svg>
 
-      <!-- Status pill top-left -->
-      <span class="pill" :class="pillColor">{{ pillLabel }}</span>
-
-      <!-- Heart top-right -->
-      <button
-        class="heart-btn"
-        :class="{ 'heart-btn--liked': item.liked }"
-        @click.stop="queueStore.toggleLike(item.id)"
-        :title="item.liked ? 'Unlike' : 'Like'"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" :fill="item.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </button>
-
       <!-- Overlay actions (shown on hover via CSS) -->
       <div class="card-overlay">
         <button v-if="item.status === 'failed'" class="overlay-btn" title="Retry" @click.stop="queueStore.addUrl(item.url)">
@@ -169,7 +154,22 @@ const errorDetails = computed(() => {
     <div class="card-body">
       <p class="card-title">{{ title }}</p>
       <p v-if="artist" class="card-artist">{{ artist }}</p>
-      <span v-if="duration" class="card-duration">{{ duration }}</span>
+      <div class="card-footer">
+        <span v-if="duration" class="card-duration">{{ duration }}</span>
+        <div class="card-footer-right">
+          <span class="pill" :class="pillColor">{{ pillLabel }}</span>
+          <button
+            class="heart-btn"
+            :class="{ 'heart-btn--liked': item.liked }"
+            @click.stop="queueStore.toggleLike(item.id)"
+            :title="item.liked ? 'Unlike' : 'Like'"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" :fill="item.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Error popover -->
@@ -256,47 +256,41 @@ const errorDetails = computed(() => {
 
 /* ── Status pill ──────────────────────────────────────── */
 .pill {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   font-family: 'JetBrains Mono', monospace;
-  backdrop-filter: blur(6px);
-  pointer-events: none;
+  white-space: nowrap;
 }
-.pill--pending   { background: rgba(0,0,0,0.55); color: var(--tx-faint); }
-.pill--active    { background: color-mix(in srgb, var(--accent) 25%, rgba(0,0,0,0.55)); color: var(--accent); }
-.pill--converting{ background: color-mix(in srgb, var(--conv) 25%, rgba(0,0,0,0.55)); color: var(--conv); }
-.pill--done      { background: color-mix(in srgb, var(--ok) 25%, rgba(0,0,0,0.55)); color: var(--ok); }
-.pill--failed    { background: color-mix(in srgb, var(--bad) 25%, rgba(0,0,0,0.55)); color: var(--bad); }
-.pill--paused    { background: color-mix(in srgb, var(--warn) 25%, rgba(0,0,0,0.55)); color: var(--warn); }
+.pill--pending   { background: var(--bg-3); color: var(--tx-faint); }
+.pill--active    { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.pill--converting{ background: color-mix(in srgb, var(--conv) 18%, transparent); color: var(--conv); }
+.pill--done      { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.pill--failed    { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.pill--paused    { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 
 /* ── Heart button ─────────────────────────────────────── */
 .heart-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: none;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
+  background: transparent;
   color: var(--tx-faint);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s, transform 0.1s;
-  z-index: 2;
+  transition: color 0.15s, transform 0.1s;
+  flex-shrink: 0;
 }
-.heart-btn:hover { color: #e06c75; background: rgba(0,0,0,0.7); }
+.heart-btn:hover { color: #e06c75; }
 .heart-btn--liked { color: #e06c75; }
-.heart-btn--liked:hover { transform: scale(1.15); }
+.heart-btn--liked:hover { transform: scale(1.2); }
 
 /* ── Hover overlay with action buttons ───────────────── */
 .card-overlay {
@@ -368,11 +362,23 @@ const errorDetails = computed(() => {
   text-overflow: ellipsis;
   font-family: 'JetBrains Mono', monospace;
 }
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  gap: 4px;
+}
+.card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
 .card-duration {
   font-size: 10px;
   color: var(--tx-faint);
   font-family: 'JetBrains Mono', monospace;
-  margin-top: 2px;
 }
 
 /* ── Error popover ────────────────────────────────────── */

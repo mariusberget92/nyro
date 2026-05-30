@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
 import type { LibraryAlbum, LibraryArtist, LibraryTrack } from '@shared/types/library'
@@ -11,6 +11,55 @@ type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
 const selected   = ref<LibraryAlbum | LibraryArtist | null>(null)
 const searchQ    = ref('')
+
+// ── Rename ────────────────────────────────────────────────
+const renaming = ref<LibraryAlbum | null>(null)
+const renameVal = ref('')
+const renameError = ref('')
+const renameInputEl = ref<HTMLInputElement | null>(null)
+
+function folderPath(album: LibraryAlbum): string {
+  const first = album.tracks[0]
+  if (!first) return ''
+  // dirname works in Node context via electron contextBridge; in renderer we compute it manually
+  const sep = first.path.includes('\\') ? '\\' : '/'
+  const parts = first.path.split(sep)
+  parts.pop()
+  return parts.join(sep)
+}
+
+async function startRename(album: LibraryAlbum, e: Event) {
+  e.stopPropagation()
+  renaming.value = album
+  renameVal.value = album.name
+  renameError.value = ''
+  await nextTick()
+  renameInputEl.value?.select()
+}
+
+async function commitRename(album: LibraryAlbum) {
+  const name = renameVal.value.trim()
+  if (!name || name === album.name) { renaming.value = null; return }
+  const oldPath = folderPath(album)
+  if (!oldPath) { renaming.value = null; return }
+  try {
+    renameError.value = ''
+    await lib.renameFolder(oldPath, name)
+    if (selected.value === album) {
+      // Update the selected album reference name so detail panel reflects it
+      album.name = name
+    }
+  } catch (err: any) {
+    renameError.value = err.message || 'Rename failed'
+    return
+  }
+  renaming.value = null
+}
+
+function cancelRename() {
+  renaming.value = null
+  renameError.value = ''
+}
 
 const filteredAlbums = computed(() =>
   lib.albums.filter(a =>
@@ -127,7 +176,7 @@ const detailArtist = computed((): LibraryArtist | null => {
 
         <!-- Albums grid -->
         <div v-if="view === 'albums'" class="grid">
-          <button
+          <div
             v-for="album in filteredAlbums" :key="album.name + album.artist"
             class="card" :class="{ active: selected === album }"
             @click="selected = selected === album ? null : album"
@@ -141,9 +190,31 @@ const detailArtist = computed((): LibraryArtist | null => {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
             </div>
-            <span class="card-name">{{ album.name }}</span>
+            <div class="card-label-row">
+              <template v-if="renaming === album">
+                <input
+                  ref="renameInputEl"
+                  v-model="renameVal"
+                  class="rename-input"
+                  @keydown.enter.stop="commitRename(album)"
+                  @keydown.escape.stop="cancelRename"
+                  @blur="commitRename(album)"
+                  @click.stop
+                />
+                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
+              </template>
+              <template v-else>
+                <span class="card-name">{{ album.name }}</span>
+                <button class="rename-btn" title="Rename folder" @click.stop="startRename(album, $event)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </template>
+            </div>
             <span class="card-sub">{{ album.artist }}{{ album.year ? ` · ${album.year}` : '' }}</span>
-          </button>
+          </div>
         </div>
 
         <!-- Artists list -->
@@ -168,7 +239,7 @@ const detailArtist = computed((): LibraryArtist | null => {
 
         <!-- Podcasts grid -->
         <div v-else-if="view === 'podcasts'" class="grid">
-          <button
+          <div
             v-for="show in filteredPodcasts" :key="show.name"
             class="card" :class="{ active: selected === show }"
             @click="selected = selected === show ? null : show"
@@ -183,9 +254,31 @@ const detailArtist = computed((): LibraryArtist | null => {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
             </div>
-            <span class="card-name">{{ show.name }}</span>
+            <div class="card-label-row">
+              <template v-if="renaming === show">
+                <input
+                  ref="renameInputEl"
+                  v-model="renameVal"
+                  class="rename-input"
+                  @keydown.enter.stop="commitRename(show)"
+                  @keydown.escape.stop="cancelRename"
+                  @blur="commitRename(show)"
+                  @click.stop
+                />
+                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
+              </template>
+              <template v-else>
+                <span class="card-name">{{ show.name }}</span>
+                <button class="rename-btn" title="Rename folder" @click.stop="startRename(show, $event)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </template>
+            </div>
             <span class="card-sub">{{ show.tracks.length }} episodes</span>
-          </button>
+          </div>
         </div>
 
         <!-- Flat track list -->
@@ -228,7 +321,28 @@ const detailArtist = computed((): LibraryArtist | null => {
               </div>
               <div class="detail-meta">
                 <span class="detail-label">{{ view === 'podcasts' ? 'PODCAST' : 'ALBUM' }}</span>
-                <h2 class="detail-name">{{ detailAlbum.name }}</h2>
+                <div class="detail-name-row">
+                  <template v-if="renaming === detailAlbum">
+                    <input
+                      ref="renameInputEl"
+                      v-model="renameVal"
+                      class="rename-input rename-input--large"
+                      @keydown.enter.stop="commitRename(detailAlbum)"
+                      @keydown.escape.stop="cancelRename"
+                      @blur="commitRename(detailAlbum)"
+                    />
+                    <span v-if="renameError" class="rename-error">{{ renameError }}</span>
+                  </template>
+                  <template v-else>
+                    <h2 class="detail-name">{{ detailAlbum.name }}</h2>
+                    <button class="rename-btn rename-btn--lg" title="Rename folder" @click.stop="startRename(detailAlbum, $event)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                  </template>
+                </div>
                 <span class="detail-sub">{{ detailAlbum.artist }}{{ detailAlbum.year ? ` · ${detailAlbum.year}` : '' }}</span>
                 <span class="detail-sub">{{ detailAlbum.tracks.length }} tracks</span>
                 <button class="play-all-btn" @click="playAlbum(detailAlbum)">
@@ -474,4 +588,59 @@ const detailArtist = computed((): LibraryArtist | null => {
 /* ── Detail transition ─────────────────────────── */
 .detail-enter-active, .detail-leave-active { transition: opacity 0.15s, transform 0.15s; }
 .detail-enter-from, .detail-leave-to { opacity: 0; transform: translateX(12px); }
+
+/* ── Card label row (name + rename pencil) ─────── */
+.card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 7px;
+  min-width: 0;
+}
+.card-label-row .card-name { flex: 1; min-width: 0; margin-top: 0; }
+.rename-btn {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border: none; background: none;
+  color: var(--tx-faint); cursor: pointer;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.card:hover .rename-btn { opacity: 1; }
+.rename-btn--lg { opacity: 1; width: 28px; height: 28px; }
+.rename-btn:hover { color: var(--accent); background: var(--bg-3); }
+
+.rename-input {
+  flex: 1; min-width: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  color: var(--tx);
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+}
+.rename-input--large {
+  font-size: 18px;
+  font-weight: 800;
+  padding: 3px 8px;
+}
+.rename-error {
+  display: block;
+  font-size: 10px;
+  color: var(--bad);
+  margin-top: 2px;
+}
+
+/* ── Detail name row ───────────────────────────── */
+.detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.detail-name-row .detail-name { margin: 0; }
 </style>
