@@ -60,6 +60,11 @@ class QueueManager {
   private currentAbortController: AbortController | null = null
   private window: BrowserWindow | null = null
 
+  // Throttle IPC progress per item: track last-sent time
+  private lastProgressSent = new Map<string, number>()
+  // Debounce disk writes
+  private persistTimer: ReturnType<typeof setTimeout> | null = null
+
   constructor() {
     this.queue = loadQueue()
     // Reset in-flight items to pending on startup
@@ -195,7 +200,8 @@ class QueueManager {
       this.currentAbortController?.abort()
     }
     this.queue = this.queue.filter((i) => i.id !== id)
-    this.persist()
+    this.lastProgressSent.delete(id)
+    this.flushPersist()
   }
 
   async start(): Promise<void> {
@@ -232,7 +238,7 @@ class QueueManager {
 
   clearCompleted(): void {
     this.queue = this.queue.filter((i) => !['completed', 'cancelled', 'failed'].includes(i.status))
-    this.persist()
+    this.flushPersist()
   }
 
   clearAll(): void {
@@ -241,7 +247,8 @@ class QueueManager {
     this.isProcessing = false
     this.isPaused = false
     this.queue = []
-    this.persist()
+    this.lastProgressSent.clear()
+    this.flushPersist()
   }
 
   private isYouTubeRadioMix(url: string): boolean {
@@ -541,19 +548,42 @@ class QueueManager {
   }
 
   private updateItem(id: string, changes: Partial<QueueItem>): void {
-    this.queue = this.queue.map((item) => (item.id === id ? { ...item, ...changes } : item))
-    this.persist()
+    // Mutate in-place — avoids O(n) array copy on every progress tick
+    const item = this.queue.find(i => i.id === id)
+    if (item) Object.assign(item, changes)
+    this.schedulePersist()
   }
 
-  private persist(): void {
+  private schedulePersist(): void {
+    // Debounce disk writes to at most once per second
+    if (this.persistTimer) return
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null
+      saveQueue(this.queue)
+    }, 1000)
+  }
+
+  private flushPersist(): void {
+    // Immediate write for terminal state changes (completed, failed, etc.)
+    if (this.persistTimer) { clearTimeout(this.persistTimer); this.persistTimer = null }
     saveQueue(this.queue)
   }
 
   private emitProgress(id: string, progress: number, status: QueueStatus): void {
+    // Throttle to at most 4 IPC messages per second per item (250ms)
+    const now = Date.now()
+    const last = this.lastProgressSent.get(id) ?? 0
+    if (now - last < 250) return
+    this.lastProgressSent.set(id, now)
     this.window?.webContents.send(IPC_CHANNELS.QUEUE_PROGRESS, { id, progress, status })
   }
 
   private emitStatusChanged(id: string, status: QueueStatus): void {
+    // Terminal states get an immediate disk flush so queue survives restarts
+    if (['completed', 'failed', 'cancelled'].includes(status)) {
+      this.lastProgressSent.delete(id)
+      this.flushPersist()
+    }
     this.window?.webContents.send(IPC_CHANNELS.QUEUE_STATUS_CHANGED, { id, status })
   }
 
