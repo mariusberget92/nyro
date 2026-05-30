@@ -87,7 +87,10 @@ app.whenReady().then(() => {
       const url = new URL(request.url)
       const filePath = url.searchParams.get('p')
       if (!filePath) return new Response('Not found', { status: 404 })
-      return net.fetch(pathToFileURL(filePath).toString())
+      // Forward all headers (including Range) so the audio element can seek
+      return net.fetch(pathToFileURL(filePath).toString(), {
+        headers: Object.fromEntries(request.headers.entries())
+      })
     } catch {
       return new Response('Bad request', { status: 400 })
     }
