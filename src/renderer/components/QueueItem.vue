@@ -61,28 +61,39 @@ const canRetry = computed(() => props.item.status === 'failed')
 const errorDetails = computed(() => {
   const raw = props.item.error || 'An unknown error occurred.'
   let fix = ''
+  let hint = ''
 
-  if (/unsupported url|no video formats/i.test(raw)) {
-    fix = 'The URL may be private, geo-blocked, or not supported. Try a different source.'
-  } else if (/sign.?in|login|age.?restricted|members.?only/i.test(raw)) {
-    fix = 'This video requires a sign-in or is age-restricted. It cannot be downloaded.'
-  } else if (/copyright|unavailable in your country/i.test(raw)) {
-    fix = 'This video is blocked due to copyright or region restrictions.'
+  if (/confirm you.re not a bot|not a bot/i.test(raw)) {
+    fix = 'YouTube is blocking the download with bot-detection. This usually fixes itself after a while — try retrying in a few minutes.'
+    hint = 'If it keeps failing, yt-dlp supports passing browser cookies. Update yt-dlp to the latest version first, as YouTube frequently changes their bot detection.'
+  } else if (/age.?restricted|age.?gate/i.test(raw)) {
+    fix = 'This video is age-restricted and requires a signed-in YouTube account to download.'
+    hint = 'yt-dlp can use browser cookies to authenticate. See the Open URL link to verify the video is accessible.'
+  } else if (/members.?only|join.*channel/i.test(raw)) {
+    fix = 'This video is for channel members only and cannot be downloaded without membership.'
+  } else if (/sign.?in|login required/i.test(raw)) {
+    fix = 'This video requires a YouTube sign-in to access.'
+  } else if (/private video|this video is private/i.test(raw)) {
+    fix = 'This video is private and cannot be downloaded.'
+  } else if (/unsupported url|no video formats|unable to extract/i.test(raw)) {
+    fix = 'The URL may not be supported, or the video has no downloadable formats. Try a different source.'
+  } else if (/copyright|unavailable in your country|blocked in/i.test(raw)) {
+    fix = 'This video is blocked due to copyright or regional restrictions.'
   } else if (/metadata fetch failed|failed to parse/i.test(raw)) {
     fix = 'Could not read video info. Check your internet connection or try again later.'
   } else if (/ffmpeg|convert/i.test(raw)) {
     fix = 'Audio conversion failed. Make sure FFmpeg is present in the resources folder.'
   } else if (/yt-dlp|spawn/i.test(raw)) {
     fix = 'yt-dlp could not be started. Make sure the yt-dlp binary is in the resources folder.'
-  } else if (/output folder|ENOENT|permission/i.test(raw)) {
+  } else if (/ENOENT|permission denied/i.test(raw)) {
     fix = 'Could not write the file. Check that the output folder exists and is writable.'
-  } else if (/network|ENOTFOUND|ETIMEDOUT/i.test(raw)) {
+  } else if (/network|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(raw)) {
     fix = 'Network error. Check your internet connection and try again.'
   } else {
-    fix = 'Try retrying the item. If it keeps failing, the source URL may no longer be available.'
+    fix = 'Try retrying. If it keeps failing, the video may no longer be available.'
   }
 
-  return { raw, fix }
+  return { raw, fix, hint }
 })
 </script>
 
@@ -179,6 +190,7 @@ const errorDetails = computed(() => {
         </div>
         <div class="err-body">
           <p class="err-fix">{{ errorDetails.fix }}</p>
+          <p v-if="errorDetails.hint" class="err-hint">{{ errorDetails.hint }}</p>
           <details class="err-raw">
             <summary>Technical details</summary>
             <pre>{{ errorDetails.raw }}</pre>
@@ -356,7 +368,8 @@ const errorDetails = computed(() => {
 }
 .err-close:hover { opacity: 1; background: color-mix(in srgb, var(--bad) 15%, transparent); }
 .err-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.err-fix { margin: 0; font-size: 12.5px; color: var(--tx-dim); line-height: 1.5; }
+.err-fix  { margin: 0; font-size: 12.5px; color: var(--tx-dim); line-height: 1.5; }
+.err-hint { margin: 6px 0 0; font-size: 11.5px; color: var(--tx-faint); line-height: 1.5; }
 .err-raw {
   font-size: 11px;
   color: var(--tx-faint);
