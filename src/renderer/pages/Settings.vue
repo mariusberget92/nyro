@@ -46,6 +46,27 @@ async function saveApiKey() {
         <span class="section-desc">Get your free API key at <a href="https://www.listennotes.com/api/" target="_blank" class="link">listennotes.com/api</a></span>
       </section>
 
+      <!-- Cookie browser -->
+      <section class="section">
+        <label class="section-label">
+          BROWSER COOKIES
+          <span v-if="s.settings.cookiesBrowser" class="key-set-badge">✓ {{ s.settings.cookiesBrowser.toUpperCase() }}</span>
+        </label>
+        <div class="toggle-group flex-wrap">
+          <button
+            v-for="b in (['chrome','firefox','edge','brave','opera','vivaldi','safari'] as const)"
+            :key="b"
+            :class="['density-btn', { active: s.settings.cookiesBrowser === b }]"
+            @click="s.update({ cookiesBrowser: s.settings.cookiesBrowser === b ? '' : b })"
+          >{{ b[0].toUpperCase() + b.slice(1) }}</button>
+        </div>
+        <span class="section-desc">
+          Pass cookies from your browser to bypass bot-detection or age-gated videos.
+          The browser must be installed and you must be signed in to YouTube.
+          <span v-if="s.settings.cookiesBrowser" class="warn-text">Active — yt-dlp will read cookies from {{ s.settings.cookiesBrowser }}.</span>
+        </span>
+      </section>
+
       <!-- Output folder -->
       <section class="section">
         <label class="section-label">OUTPUT FOLDER</label>
@@ -241,6 +262,7 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
 }
 .link { color: var(--accent); text-decoration: none; }
 .link:hover { text-decoration: underline; }
+.warn-text { color: var(--warn); display: block; margin-top: 4px; }
 .disabled-section { opacity: 0.5; pointer-events: none; }
 .flex-wrap { flex-wrap: wrap; }
 .prefix-row { display: flex; flex-direction: column; gap: 8px; }

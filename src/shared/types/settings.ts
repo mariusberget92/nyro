@@ -12,6 +12,7 @@ export interface AppSettings {
   listenNotesApiKey: string
   downloadMode: 'audio' | 'video'
   videoQuality: '4K' | '1080p' | '720p' | '480p'
+  cookiesBrowser: '' | 'chrome' | 'firefox' | 'edge' | 'brave' | 'opera' | 'vivaldi' | 'safari'
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -26,4 +27,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   listenNotesApiKey: '',
   downloadMode: 'audio',
   videoQuality: '1080p',
+  cookiesBrowser: '',
 }
