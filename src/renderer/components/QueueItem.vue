@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { QueueItem } from '@shared/types/queue'
-import { useQueueStore } from '../stores/queueStore'
+import { useQueueStore, progressMap } from '../stores/queueStore'
 
 const props = defineProps<{
   item: QueueItem
@@ -36,8 +36,12 @@ const duration = computed(() => {
   return `${m}:${s.toString().padStart(2, '0')}`
 })
 
+// Read live progress/status from the fast path map; fall back to item props
+const liveStatus   = computed(() => progressMap.value.get(props.item.id)?.status  ?? props.item.status)
+const liveProgress = computed(() => progressMap.value.get(props.item.id)?.progress ?? props.item.progress)
+
 const pillColor = computed(() => {
-  switch (props.item.status) {
+  switch (liveStatus.value) {
     case 'downloading': case 'fetching': return 'pill--active'
     case 'converting': case 'tagging': return 'pill--converting'
     case 'completed': return 'pill--done'
@@ -48,7 +52,7 @@ const pillColor = computed(() => {
 })
 
 const pillLabel = computed(() => {
-  switch (props.item.status) {
+  switch (liveStatus.value) {
     case 'fetching': return 'Fetching'
     case 'downloading': return 'Downloading'
     case 'converting': return 'Converting'
@@ -62,12 +66,12 @@ const pillLabel = computed(() => {
 })
 
 const progressVisible = computed(() =>
-  ['downloading', 'converting', 'tagging', 'completed'].includes(props.item.status)
+  ['downloading', 'converting', 'tagging', 'completed'].includes(liveStatus.value)
 )
 
 const progressColor = computed(() => {
-  if (props.item.status === 'converting' || props.item.status === 'tagging') return 'var(--conv)'
-  if (props.item.status === 'completed') return 'var(--ok)'
+  if (liveStatus.value === 'converting' || liveStatus.value === 'tagging') return 'var(--conv)'
+  if (liveStatus.value === 'completed') return 'var(--ok)'
   return 'var(--accent)'
 })
 
@@ -146,7 +150,7 @@ const errorDetails = computed(() => {
 
       <!-- Progress bar bottom of thumb -->
       <div v-if="progressVisible" class="thumb-progress">
-        <div class="thumb-progress-fill" :style="{ width: `${item.progress || 0}%`, background: progressColor }" />
+        <div class="thumb-progress-fill" :style="{ width: `${liveProgress}%`, background: progressColor }" />
       </div>
     </div>
 
@@ -174,7 +178,7 @@ const errorDetails = computed(() => {
 
     <!-- Error popover -->
     <Transition name="err">
-      <div v-if="showError && item.status === 'failed'" class="error-popover" @click.stop>
+      <div v-if="showError && liveStatus === 'failed'" class="error-popover" @click.stop>
         <div class="err-header">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -333,7 +337,6 @@ const errorDetails = computed(() => {
 }
 .thumb-progress-fill {
   height: 100%;
-  transition: width 0.3s ease;
 }
 
 /* ── Card body ────────────────────────────────────────── */

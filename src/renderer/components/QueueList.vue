@@ -21,7 +21,7 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 
 <template>
   <div class="queue-list">
-    <TransitionGroup name="card-anim" tag="div" class="card-grid">
+    <div class="card-grid">
       <QueueCard
         v-for="(item, idx) in queueStore.items"
         :key="item.id"
@@ -32,7 +32,7 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
         @toggle-select="emit('toggleSelect', $event)"
         @edit="emit('edit', $event)"
       />
-    </TransitionGroup>
+    </div>
 
     <div v-if="queueStore.items.length === 0" class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color: var(--tx-faint); margin-bottom: 12px">
@@ -66,8 +66,4 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 .empty-title { font-size: 14px; font-weight: 600; color: var(--tx-dim); margin: 0 0 4px; }
 .empty-sub { font-size: 12px; color: var(--tx-faint); margin: 0; }
 
-.card-anim-enter-active { transition: all 0.2s ease-out; }
-.card-anim-leave-active { transition: all 0.15s ease-in; }
-.card-anim-enter-from { opacity: 0; transform: scale(0.92); }
-.card-anim-leave-to { opacity: 0; transform: scale(0.92); }
 </style>
