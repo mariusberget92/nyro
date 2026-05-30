@@ -66,7 +66,12 @@ function onKeydown(e: KeyboardEvent) {
         :disabled="loading"
         @keydown="onKeydown"
       />
-      <button class="add-btn" :disabled="loading || !url.trim()" @click="handleAdd">
+      <button
+        class="add-btn"
+        :class="{ empty: !url.trim() && !loading }"
+        :disabled="loading || !url.trim()"
+        @click="handleAdd"
+      >
         <svg v-if="!loading" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.3"/><path d="M21 12a9 9 0 00-9-9"/></svg>
         {{ loading ? 'Adding...' : 'Add to Queue' }}
@@ -129,7 +134,9 @@ function onKeydown(e: KeyboardEvent) {
   flex-shrink: 0;
 }
 .add-btn:hover:not(:disabled) { filter: brightness(1.15); }
-.add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.add-btn:disabled { cursor: not-allowed; }
+.add-btn.empty { opacity: 0.35; }
+.add-btn:disabled:not(.empty) { opacity: 0.65; }
 .error-msg { font-size: 11.5px; color: var(--bad); margin: 0; }
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
