@@ -52,5 +52,7 @@ useIpc('queue:error', (payload: any) => {
   display: flex;
   flex-direction: column;
   background: var(--bg-0);
+  /* Subtle vignette on left edge where rail meets content */
+  box-shadow: inset 4px 0 16px rgba(0,0,0,0.18);
 }
 </style>

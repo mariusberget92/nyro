@@ -4,40 +4,62 @@
 
 @layer base {
   :root {
-    /* Nord Polar Night — layered dark backgrounds */
-    --bg-canvas: #13161e;
-    --bg-0:      #1a1e2a;
-    --bg-1:      #212636;
-    --bg-2:      #2a3040;
-    --bg-3:      #323849;
-    --bg-4:      #3b4252;
+    /* ── Nord Polar Night ─────────────────────────────── */
+    --nord0:  #2e3440;
+    --nord1:  #3b4252;
+    --nord2:  #434c5e;
+    --nord3:  #4c566a;
 
-    /* Nord Snow Storm — text hierarchy */
-    --tx:        #eceff4;
-    --tx-dim:    #d8dee9;
-    --tx-faint:  #4c566a;
+    /* ── Nord Snow Storm ──────────────────────────────── */
+    --nord4:  #d8dee9;
+    --nord5:  #e5e9f0;
+    --nord6:  #eceff4;
 
-    /* Cyan-tinted hairlines (hacker feel) */
-    --line:      rgba(136, 192, 208, 0.08);
-    --line-2:    rgba(136, 192, 208, 0.18);
+    /* ── Nord Frost ───────────────────────────────────── */
+    --nord7:  #8fbcbb;
+    --nord8:  #88c0d0;
+    --nord9:  #81a1c1;
+    --nord10: #5e81ac;
 
-    /* Nord Frost — primary accent (cyan) */
-    --accent:    #88c0d0;
-    --accent-glow: rgba(136, 192, 208, 0.15);
+    /* ── Nord Aurora ──────────────────────────────────── */
+    --nord11: #bf616a;   /* red    */
+    --nord12: #d08770;   /* orange */
+    --nord13: #ebcb8b;   /* yellow */
+    --nord14: #a3be8c;   /* green  */
+    --nord15: #b48ead;   /* purple */
 
-    /* Nord Aurora — semantic state colors */
-    --conv:      #b48ead;   /* purple — converting */
-    --warn:      #ebcb8b;   /* yellow — paused */
-    --ok:        #a3be8c;   /* green  — completed */
-    --bad:       #bf616a;   /* red    — failed */
+    /* ── Semantic aliases ─────────────────────────────── */
+    --bg-canvas: #1b1f2b;
+    --bg-0:      #1f2433;
+    --bg-1:      #252b3b;
+    --bg-2:      #2c3347;
+    --bg-3:      #333c52;
+    --bg-4:      var(--nord1);
 
-    /* Geometry */
-    --radius:    6px;
+    --tx:        var(--nord6);
+    --tx-dim:    var(--nord4);
+    --tx-faint:  var(--nord3);
+
+    --line:      rgba(136, 192, 208, 0.07);
+    --line-2:    rgba(136, 192, 208, 0.16);
+
+    --accent:      var(--nord8);
+    --accent-2:    var(--nord9);
+    --accent-glow: rgba(136, 192, 208, 0.12);
+    --accent-glow-strong: rgba(136, 192, 208, 0.22);
+
+    --conv:  var(--nord15);
+    --warn:  var(--nord13);
+    --ok:    var(--nord14);
+    --bad:   var(--nord11);
+
+    --radius: 6px;
+
+    /* ── Rail width (easy to tweak) ─────────────────── */
+    --rail-w: 62px;
   }
 
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   html, body, #root {
     height: 100%;
@@ -52,25 +74,29 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Futuristic scrollbar */
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--accent); opacity: 0.3; border-radius: 2px; }
-
-  /* Hacker glow on focused inputs */
-  input:focus, textarea:focus {
-    box-shadow: 0 0 0 2px var(--accent-glow), 0 0 12px var(--accent-glow);
+  /* ── Scrollbar ─────────────────────────────────────── */
+  ::-webkit-scrollbar        { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  {
+    background: var(--accent);
+    opacity: 0.25;
+    border-radius: 2px;
   }
 
-  /* Selection color */
-  ::selection { background: var(--accent-glow); color: var(--tx); }
+  /* ── Focus glow ────────────────────────────────────── */
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-glow-strong);
+  }
+
+  /* ── Selection ─────────────────────────────────────── */
+  ::selection {
+    background: rgba(136, 192, 208, 0.25);
+    color: var(--tx);
+  }
 }
 
 @layer utilities {
-  .font-mono-nums {
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .text-balance {
-    text-wrap: balance;
-  }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  .text-balance { text-wrap: balance; }
 }

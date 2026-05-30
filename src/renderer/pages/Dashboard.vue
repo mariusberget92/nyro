@@ -141,56 +141,82 @@ function handleSave(_id: string, _artist: string, _title: string) {
 
 <style scoped>
 .dashboard { display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
+
 .toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 56px;
-  padding: 0 18px;
-  background: var(--bg-0);
+  height: 52px;
+  padding: 0 16px;
+  background: linear-gradient(to bottom, var(--bg-1), var(--bg-0));
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
-.toolbar-title { font-size: 17px; font-weight: 800; color: var(--tx); margin: 0; }
-.pending-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx-faint); }
+.toolbar-title {
+  font-size: 15px; font-weight: 800; color: var(--tx); margin: 0;
+  letter-spacing: 0.01em;
+}
+.pending-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--tx-faint);
+  background: var(--bg-2);
+  padding: 2px 7px; border-radius: 20px;
+}
 .spacer { flex: 1; }
-.toolbar-actions { display: flex; align-items: center; gap: 4px; }
-.sep { width: 1px; height: 20px; background: var(--line-2); margin: 0 4px; }
+.toolbar-actions { display: flex; align-items: center; gap: 3px; }
+.sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
+
 .icon-btn {
-  width: 32px; height: 32px;
-  border-radius: 8px; border: none;
-  background: transparent; color: var(--tx-dim);
+  width: 30px; height: 30px;
+  border-radius: 7px; border: none;
+  background: transparent; color: var(--tx-faint);
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background 0.12s, color 0.12s;
 }
-.icon-btn:hover { background: var(--bg-3); }
-.icon-btn.active { background: var(--bg-3); color: var(--accent); }
-.icon-btn.danger:hover { color: var(--bad); }
+.icon-btn:hover { background: var(--bg-3); color: var(--tx-dim); }
+.icon-btn.active { background: var(--accent-glow); color: var(--accent); }
+.icon-btn.danger:hover { color: var(--bad); background: rgba(191,97,106,0.1); }
+
 .primary-btn {
   display: flex; align-items: center; gap: 6px;
-  padding: 0 18px; height: 34px;
-  background: transparent; color: var(--accent);
-  border: 1.5px solid var(--accent); border-radius: var(--radius);
-  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  padding: 0 16px; height: 32px;
+  background: linear-gradient(135deg, rgba(136,192,208,0.15), rgba(136,192,208,0.08));
+  color: var(--accent);
+  border: 1px solid rgba(136,192,208,0.3);
+  border-radius: 8px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
-  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 0 0 var(--accent-glow);
 }
-.primary-btn:hover { background: var(--accent); color: #0d1117; }
+.primary-btn:hover {
+  background: linear-gradient(135deg, rgba(136,192,208,0.28), rgba(136,192,208,0.16));
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
 .form-panel {
-  padding: 14px 18px;
+  padding: 12px 16px;
   background: var(--bg-1);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
+
 .queue-scroll { flex: 1; overflow-y: auto; }
+
 .toolbar-footer {
   display: flex; align-items: center; justify-content: space-between;
-  height: 36px; padding: 0 18px;
-  background: var(--bg-0); border-top: 1px solid var(--line);
+  height: 32px; padding: 0 16px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
   flex-shrink: 0;
 }
-.footer-info { font-size: 11px; color: var(--tx-faint); }
-.footer-quality { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent); }
+.footer-info { font-size: 10.5px; color: var(--tx-faint); }
+.footer-quality {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
+}
 
 .form-slide-enter-active { transition: all 0.18s ease-out; }
 .form-slide-leave-active { transition: all 0.14s ease-in; }
