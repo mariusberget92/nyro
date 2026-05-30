@@ -27,6 +27,11 @@ function moveFile(src: string, dest: string): void {
   }
 }
 
+function cleanUploader(uploader?: string): string {
+  if (!uploader) return ''
+  return uploader.replace(/\s*-\s*Topic$/i, '').trim()
+}
+
 function parseArtistTitle(videoTitle: string): { artist: string; title: string } {
   // Strip common suffixes like "(Official Video)", "[HD]", "(Lyrics)", etc.
   const cleaned = videoTitle
@@ -161,7 +166,7 @@ class QueueManager {
         downloadMode: settings.downloadMode,
         metadata: {
           title: title || meta.title || 'Unknown Title',
-          artist: artist || meta.uploader || 'Unknown Artist',
+          artist: artist || cleanUploader(meta.uploader) || 'Unknown Artist',
           album: meta.album || '',
           year: isNaN(year as number) ? undefined : year,
           duration: meta.duration || 0,
