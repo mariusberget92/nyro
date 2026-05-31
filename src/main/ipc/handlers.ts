@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow, app } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron'
 import { join } from 'path'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
@@ -186,6 +186,11 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       saveLibraryCache(libraryCache)
     }
     return destPath
+  })
+
+  // shell:show-in-folder — reveal a file in Explorer/Finder/Nautilus
+  ipcMain.handle(IPC_CHANNELS.SHELL_SHOW_IN_FOLDER, (_event, filePath: string) => {
+    shell.showItemInFolder(filePath)
   })
 
   // library:rename-folder — rename an album or podcast folder on disk

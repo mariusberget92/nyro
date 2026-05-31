@@ -165,6 +165,12 @@ onBeforeUnmount(() => {
         <div class="track-text">
           <span class="track-title">{{ player.currentTrack.title }}</span>
           <span class="track-artist">{{ player.currentTrack.artist }}</span>
+          <span
+            v-if="player.currentTrack.path"
+            class="track-path"
+            :title="'Show in Explorer: ' + player.currentTrack.path"
+            @click="window.nyro.invoke('shell:show-in-folder', player.currentTrack!.path!)"
+          >{{ player.currentTrack.path }}</span>
         </div>
       </div>
 
@@ -385,6 +391,15 @@ onBeforeUnmount(() => {
   font-size: 11px; color: var(--tx-faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.track-path {
+  font-size: 9px; color: var(--tx-faint); opacity: 0;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; transition: opacity 0.15s;
+  max-width: 100%;
+}
+.track-path:hover { opacity: 1 !important; color: var(--accent); }
+.track-info:hover .track-path { opacity: 0.5; }
 
 /* ── Controls ───────────────────────────── */
 .controls {

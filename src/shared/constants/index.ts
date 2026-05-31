@@ -28,6 +28,7 @@ export const IPC_CHANNELS = {
   LIBRARY_GET_LRC:       'library:get-lrc',
   LIBRARY_RENAME_FOLDER: 'library:rename-folder',
   LIBRARY_SET_COVER:     'library:set-cover',
+  SHELL_SHOW_IN_FOLDER:  'shell:show-in-folder',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',

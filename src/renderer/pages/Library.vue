@@ -125,6 +125,11 @@ const detailArtist = computed((): LibraryArtist | null => {
   return selected.value as LibraryArtist
 })
 
+// ── File reveal ──────────────────────────────────────────
+function revealFile(path: string) {
+  window.nyro.invoke('shell:show-in-folder', path)
+}
+
 // ── Cover upload ──────────────────────────────────────────
 async function pickCoverForAlbum(album: LibraryAlbum, e: Event) {
   e.stopPropagation()
@@ -334,9 +339,15 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
             <div class="tr-info">
               <span class="tr-title">{{ track.title }}</span>
               <span class="tr-artist">{{ track.artist }}</span>
+              <span class="tr-path" :title="track.path">{{ track.path }}</span>
             </div>
             <span class="tr-album">{{ track.album }}</span>
             <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+            <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -403,9 +414,14 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
                 <span class="tr-num">{{ track.trackNumber ?? i + 1 }}</span>
                 <div class="tr-info">
                   <span class="tr-title">{{ track.title }}</span>
-                  <span class="tr-artist">{{ track.artist }}</span>
+                  <span class="tr-path" :title="track.path">{{ track.path }}</span>
                 </div>
                 <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </template>
@@ -444,8 +460,14 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
                   <span class="tr-num">{{ track.trackNumber ?? i + 1 }}</span>
                   <div class="tr-info">
                     <span class="tr-title">{{ track.title }}</span>
+                    <span class="tr-path" :title="track.path">{{ track.path }}</span>
                   </div>
                   <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                  <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -605,6 +627,22 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .tr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .tr-title { font-size: 12.5px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-artist { font-size: 10.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-path {
+  font-size: 9.5px; color: var(--tx-faint); opacity: 0;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity 0.12s; max-width: 100%;
+}
+.track-row:hover .tr-path { opacity: 0.6; }
+.reveal-btn {
+  flex-shrink: 0; width: 24px; height: 24px;
+  background: none; border: 1px solid var(--line-2);
+  border-radius: 5px; color: var(--tx-faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.track-row:hover .reveal-btn { opacity: 1; }
+.reveal-btn:hover { color: var(--accent); background: var(--accent-glow); border-color: var(--accent); }
 .tr-album { font-size: 11px; color: var(--tx-faint); flex-shrink: 0; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
 
