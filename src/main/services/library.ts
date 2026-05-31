@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
-import { join, extname, basename } from 'path'
+import { join, extname, basename, dirname } from 'path'
 import NodeID3 from 'node-id3'
 import type { LibraryTrack, LibraryScanResult } from '@shared/types/library'
 
@@ -33,10 +33,12 @@ function sourceFromPath(filePath: string, outputFolder: string): LibraryTrack['s
 
 function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string | undefined {
   try {
+    // If a manually-set PNG cover exists, preserve it instead of overwriting with the ID3 JPEG extract
+    const pngPath = join(cacheDir, `${trackId}.png`)
+    if (existsSync(pngPath)) return pngPath
+
     const coverPath = join(cacheDir, `${trackId}.jpg`)
-    if (!existsSync(coverPath)) {
-      writeFileSync(coverPath, coverData)
-    }
+    writeFileSync(coverPath, coverData)
     return coverPath
   } catch {
     return undefined

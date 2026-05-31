@@ -5,7 +5,7 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
-import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, copyFileSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, copyFileSync, mkdirSync, unlinkSync } from 'fs'
 import { createHash } from 'crypto'
 import NodeID3 from 'node-id3'
 
@@ -150,9 +150,22 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.LIBRARY_SET_COVER, async (_event, trackPath: string, imagePath: string) => {
     const cacheDir = join(app.getPath('userData'), 'covers')
     mkdirSync(cacheDir, { recursive: true })
+
+    // Ensure in-memory cache is loaded before we try to patch it
+    if (!libraryCache) libraryCache = loadLibraryCache()
+
     const id = createHash('md5').update(trackPath).digest('hex')
-    const destPath = join(cacheDir, `${id}.jpg`)
+
+    // Preserve original extension so the cover is served correctly
+    const srcExt = imagePath.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const destExt = srcExt === 'png' ? 'png' : 'jpg'
+    const destPath = join(cacheDir, `${id}.${destExt}`)
     copyFileSync(imagePath, destPath)
+
+    // Remove the opposite-extension file if it exists to avoid stale cache entries
+    const altExt = destExt === 'png' ? 'jpg' : 'png'
+    const altPath = join(cacheDir, `${id}.${altExt}`)
+    if (existsSync(altPath)) try { unlinkSync(altPath) } catch {}
 
     // Embed image in ID3 tag (audio files only)
     const ext = trackPath.split('.').pop()?.toLowerCase() ?? ''
