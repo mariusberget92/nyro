@@ -371,14 +371,20 @@ class QueueManager {
         return
       }
 
-      // Step 2: Write ID3 tags
+      // Step 2: Write ID3 tags (with thumbnail if available)
       this.updateItem(item.id, { status: 'tagging', progress: 95 })
       this.emitStatusChanged(item.id, 'tagging')
+
+      let podThumbBuf: Buffer | null = null
+      if (meta.thumbnailUrl) {
+        try { podThumbBuf = await fetchBuffer(meta.thumbnailUrl) } catch { /* non-fatal */ }
+      }
 
       await writeID3Tags(tempMp3, {
         title: meta.title,
         artist: meta.artist,
-        album: meta.album
+        album: meta.album,
+        thumbBuf: podThumbBuf ?? undefined,
       })
 
       // Step 3: Move to Podcasts/{showName}/
@@ -393,6 +399,10 @@ class QueueManager {
       const safeTitle = sanitizeFilenameComponent(meta.title)
       const finalPath = join(targetFolder, `${safeTitle}.mp3`)
       moveFile(tempMp3, finalPath)
+
+      if (podThumbBuf) {
+        saveFolderCover(targetFolder, podThumbBuf)
+      }
 
       this.updateItem(item.id, {
         status: 'completed',

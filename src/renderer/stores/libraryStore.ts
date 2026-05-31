@@ -58,12 +58,33 @@ export const useLibraryStore = defineStore('library', {
         if (!map.has(t.album)) {
           map.set(t.album, { name: t.album, artist: t.artist, coverPath: t.coverPath, tracks: [] })
         }
-        map.get(t.album)!.tracks.push(t)
+        const entry = map.get(t.album)!
+        if (!entry.coverPath && t.coverPath) entry.coverPath = t.coverPath
+        entry.tracks.push(t)
       }
       return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
     },
 
-    musicTracks: (state) => state.tracks.filter(t => t.source === 'music'),
+    musicTracks: (state): LibraryTrack[] => {
+      // Build a folder→coverPath map so tracks without embedded art
+      // still show the folder's cover.jpg from a sibling track
+      const folderCover = new Map<string, string>()
+      for (const t of state.tracks) {
+        if (t.source !== 'music' || !t.coverPath) continue
+        const sep = t.path.includes('\\') ? '\\' : '/'
+        const folder = t.path.split(sep).slice(0, -1).join(sep)
+        if (!folderCover.has(folder)) folderCover.set(folder, t.coverPath)
+      }
+      return state.tracks
+        .filter(t => t.source === 'music')
+        .map(t => {
+          if (t.coverPath) return t
+          const sep = t.path.includes('\\') ? '\\' : '/'
+          const folder = t.path.split(sep).slice(0, -1).join(sep)
+          const shared = folderCover.get(folder)
+          return shared ? { ...t, coverPath: shared } : t
+        })
+    },
     videoTracks: (state) => state.tracks.filter(t => t.source === 'video'),
   },
 
