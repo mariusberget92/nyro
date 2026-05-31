@@ -48,6 +48,17 @@ export const MB_BANDS: MbBandDef[] = [
   { label: 'High',     color: '#b48ead', crossLow: 8000, crossHigh: null },
 ]
 
+// ── FX definitions ───────────────────────────────────────────────────────────
+
+export interface FxSettings {
+  bassBoost:   { enabled: boolean; amount: number }   // 0–15 dB low-shelf at 100 Hz
+  treble:      { enabled: boolean; amount: number }   // 0–12 dB high-shelf at 8 kHz
+  stereoWidth: { enabled: boolean; amount: number }   // 0–200 (100 = normal stereo)
+  reverb:      { enabled: boolean; mix: number; roomSize: number } // mix 0–100 %, room 0–100 %
+  crossfeed:   { enabled: boolean; amount: number }   // 0–100 %
+  limiter:     { enabled: boolean; threshold: number } // -24..0 dB
+}
+
 // ── Persisted settings ───────────────────────────────────────────────────────
 
 export interface EqSettings {
@@ -69,6 +80,22 @@ export interface MbSettings {
   enabled: boolean
   bands: MbBandSettings[]
 }
+
+function defaultFx(): FxSettings {
+  return {
+    bassBoost:   { enabled: false, amount: 6 },
+    treble:      { enabled: false, amount: 4 },
+    stereoWidth: { enabled: false, amount: 100 },
+    reverb:      { enabled: false, mix: 20, roomSize: 50 },
+    crossfeed:   { enabled: false, amount: 30 },
+    limiter:     { enabled: false, threshold: -3 },
+  }
+}
+
+function loadFx(): FxSettings {
+  try { return { ...defaultFx(), ...JSON.parse(localStorage.getItem('nyro-fx') ?? '') } } catch { return defaultFx() }
+}
+function saveFx(s: FxSettings) { localStorage.setItem('nyro-fx', JSON.stringify(s)) }
 
 function defaultEq(): EqSettings {
   return { enabled: false, gains: EQ_BANDS.map(() => 0), preampGain: 0 }
@@ -101,7 +128,7 @@ let source: MediaElementAudioSourceNode | null = null
 
 // EQ nodes
 let preampNode:  GainNode | null = null
-let eqBypass:    GainNode | null = null          // bypasses EQ when disabled
+let eqBypass:    GainNode | null = null
 let eqFilters:   BiquadFilterNode[] = []
 
 // MB compressor nodes
@@ -110,14 +137,48 @@ let mbBandNodes: Array<{ hpf: BiquadFilterNode | null; lpf: BiquadFilterNode | n
 let mbMerge:     GainNode | null = null
 let mbBypass:    GainNode | null = null
 
-// Spectrum analyser (exposed for the visualizer)
+// FX nodes (inserted after mbBypass, before analyser)
+let bassFilter:   BiquadFilterNode | null = null
+let trebleFilter: BiquadFilterNode | null = null
+
+// Stereo width — M/S via channel splitter+merger
+let swSplitter: ChannelSplitterNode | null = null
+let swGainLL:   GainNode | null = null
+let swGainRR:   GainNode | null = null
+let swGainLR:   GainNode | null = null  // L→R cross
+let swGainRL:   GainNode | null = null  // R→L cross
+let swMerger:   ChannelMergerNode | null = null
+
+// Reverb
+let reverbDry:  GainNode | null = null
+let reverbWet:  GainNode | null = null
+let reverbConv: ConvolverNode | null = null
+let reverbSum:  GainNode | null = null
+
+// Crossfeed (headphone speaker simulation)
+let cfSplitter: ChannelSplitterNode | null = null
+let cfLpfL:     BiquadFilterNode | null = null
+let cfLpfR:     BiquadFilterNode | null = null
+let cfDelayL:   DelayNode | null = null
+let cfDelayR:   DelayNode | null = null
+let cfGainLR:   GainNode | null = null
+let cfGainRL:   GainNode | null = null
+let cfMerger:   ChannelMergerNode | null = null
+let cfDry:      GainNode | null = null
+let cfSum:      GainNode | null = null
+
+// Limiter
+let limiterNode: DynamicsCompressorNode | null = null
+
+// Spectrum analyser
 let analyserNode: AnalyserNode | null = null
 
 export function getAnalyser(): AnalyserNode | null { return analyserNode }
 
-// Reactive settings (the UI binds to these)
+// Reactive settings
 export const eqSettings = reactive<EqSettings>(loadEq())
 export const mbSettings = reactive<MbSettings>(loadMb())
+export const fxSettings = reactive<FxSettings>(loadFx())
 
 // Ensure arrays are the right length after a schema change
 if (eqSettings.gains.length !== EQ_BANDS.length) eqSettings.gains = EQ_BANDS.map(() => 0)
@@ -199,19 +260,93 @@ function buildGraph(audioEl: HTMLAudioElement) {
     return { hpf, lpf, comp, makeup }
   })
 
+  // ── FX chain ──────────────────────────────────────────────
+
+  // Bass boost & treble (series biquad filters)
+  bassFilter   = c.createBiquadFilter()
+  bassFilter.type = 'lowshelf'
+  bassFilter.frequency.value = 100
+  bassFilter.gain.value = 0
+
+  trebleFilter = c.createBiquadFilter()
+  trebleFilter.type = 'highshelf'
+  trebleFilter.frequency.value = 8000
+  trebleFilter.gain.value = 0
+
+  // Stereo widener (M/S via channel routing)
+  swSplitter = c.createChannelSplitter(2)
+  swGainLL   = c.createGain()
+  swGainRR   = c.createGain()
+  swGainLR   = c.createGain()
+  swGainRL   = c.createGain()
+  swMerger   = c.createChannelMerger(2)
+
+  swSplitter.connect(swGainLL, 0); swGainLL.connect(swMerger, 0, 0)  // L→L
+  swSplitter.connect(swGainRR, 1); swGainRR.connect(swMerger, 0, 1)  // R→R
+  swSplitter.connect(swGainLR, 0); swGainLR.connect(swMerger, 0, 1)  // L→R cross
+  swSplitter.connect(swGainRL, 1); swGainRL.connect(swMerger, 0, 0)  // R→L cross
+
+  // Reverb (dry + wet convolver in parallel)
+  reverbDry  = c.createGain()
+  reverbWet  = c.createGain()
+  reverbConv = c.createConvolver()
+  reverbSum  = c.createGain()
+  reverbDry.gain.value = 1
+  reverbWet.gain.value = 0
+
+  // Crossfeed (LPF + short delay cross-mix for headphones)
+  cfSplitter = c.createChannelSplitter(2)
+  cfLpfL     = c.createBiquadFilter(); cfLpfL.type = 'lowpass'; cfLpfL.frequency.value = 700
+  cfLpfR     = c.createBiquadFilter(); cfLpfR.type = 'lowpass'; cfLpfR.frequency.value = 700
+  cfDelayL   = c.createDelay(0.05); cfDelayL.delayTime.value = 0.0003
+  cfDelayR   = c.createDelay(0.05); cfDelayR.delayTime.value = 0.0003
+  cfGainLR   = c.createGain(); cfGainLR.gain.value = 0
+  cfGainRL   = c.createGain(); cfGainRL.gain.value = 0
+  cfDry      = c.createGain()
+  cfSum      = c.createGain()
+  cfMerger   = c.createChannelMerger(2)
+
+  cfSplitter.connect(cfLpfL, 0); cfLpfL.connect(cfDelayL); cfDelayL.connect(cfGainLR)
+  cfSplitter.connect(cfLpfR, 1); cfLpfR.connect(cfDelayR); cfDelayR.connect(cfGainRL)
+
+  // Limiter (extreme compressor settings)
+  limiterNode = c.createDynamicsCompressor()
+  limiterNode.knee.value     = 3
+  limiterNode.ratio.value    = 20
+  limiterNode.attack.value   = 0.003
+  limiterNode.release.value  = 0.1
+  limiterNode.threshold.value = 0  // will be overridden
+
   analyserNode = c.createAnalyser()
   analyserNode.fftSize = 128
   analyserNode.smoothingTimeConstant = 0.75
   analyserNode.minDecibels = -90
   analyserNode.maxDecibels = -10
 
+  // Wire: mbBypass → bass → treble → swSplitter → swMerger → reverbDry/Wet → reverbSum → cfDry/cross → cfSum/Merger → limiter → analyser → dest
   mbMerge.connect(mbBypass)
-  mbBypass.connect(analyserNode)
+  mbBypass.connect(bassFilter)
+  bassFilter.connect(trebleFilter)
+  trebleFilter.connect(swSplitter)
+  swMerger.connect(reverbDry)
+  swMerger.connect(reverbConv)
+  reverbConv.connect(reverbWet)
+  reverbDry.connect(reverbSum)
+  reverbWet.connect(reverbSum)
+  reverbSum.connect(cfSplitter)
+  reverbSum.connect(cfDry)
+  cfGainLR.connect(cfMerger, 0, 1)  // L cross → R
+  cfGainRL.connect(cfMerger, 0, 0)  // R cross → L
+  cfDry.connect(cfSum)
+  cfMerger.connect(cfSum)
+  cfSum.connect(limiterNode)
+  limiterNode.connect(analyserNode)
   analyserNode.connect(c.destination)
 
   applyEqEnabled()
   applyMbEnabled()
   applyPreamp()
+  applyFxAll()
 }
 
 // ── Apply helpers ────────────────────────────────────────────────────────────
@@ -299,6 +434,81 @@ export function getEqResponse(): Float32Array {
 }
 
 export function getFreqArray_public() { return getFreqArray() }
+
+// ── FX apply functions ───────────────────────────────────────────────────────
+
+function generateReverbIR(c: AudioContext, roomSize: number): AudioBuffer {
+  const sampleRate = c.sampleRate
+  const duration   = 0.5 + roomSize * 3.5   // 0.5s–4s
+  const decay      = 1 + roomSize * 5        // decay exponent
+  const len        = Math.floor(sampleRate * duration)
+  const buf        = c.createBuffer(2, len, sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay)
+    }
+  }
+  return buf
+}
+
+export function applyFxBassBoost() {
+  if (!bassFilter) return
+  bassFilter.gain.value = fxSettings.bassBoost.enabled ? fxSettings.bassBoost.amount : 0
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxTreble() {
+  if (!trebleFilter) return
+  trebleFilter.gain.value = fxSettings.treble.enabled ? fxSettings.treble.amount : 0
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxStereoWidth() {
+  if (!swGainLL || !swGainRR || !swGainLR || !swGainRL) return
+  const w = fxSettings.stereoWidth.enabled ? fxSettings.stereoWidth.amount / 100 : 1
+  swGainLL.gain.value = (1 + w) / 2
+  swGainRR.gain.value = (1 + w) / 2
+  swGainLR.gain.value = (1 - w) / 2
+  swGainRL.gain.value = (1 - w) / 2
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxReverb() {
+  if (!reverbDry || !reverbWet || !reverbConv) return
+  const c = getCtx()
+  const mix = fxSettings.reverb.enabled ? fxSettings.reverb.mix / 100 : 0
+  reverbDry.gain.value = 1 - mix * 0.5
+  reverbWet.gain.value = mix
+  if (fxSettings.reverb.enabled) {
+    reverbConv.buffer = generateReverbIR(c, fxSettings.reverb.roomSize / 100)
+  }
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxCrossfeed() {
+  if (!cfGainLR || !cfGainRL) return
+  const amount = fxSettings.crossfeed.enabled ? fxSettings.crossfeed.amount / 100 * 0.45 : 0
+  cfGainLR.gain.value = amount
+  cfGainRL.gain.value = amount
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxLimiter() {
+  if (!limiterNode) return
+  limiterNode.threshold.value = fxSettings.limiter.enabled ? fxSettings.limiter.threshold : 0
+  limiterNode.ratio.value     = fxSettings.limiter.enabled ? 20 : 1
+  saveFx({ ...fxSettings })
+}
+
+export function applyFxAll() {
+  applyFxBassBoost()
+  applyFxTreble()
+  applyFxStereoWidth()
+  applyFxReverb()
+  applyFxCrossfeed()
+  applyFxLimiter()
+}
 
 // ── Connect / resume ─────────────────────────────────────────────────────────
 

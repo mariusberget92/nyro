@@ -3,16 +3,16 @@ import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useHistoryStore } from '../stores/historyStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import AudioProcessor from './AudioProcessor.vue'
 import Visualizer from './Visualizer.vue'
 import { connectAudioElement, resumeContext } from '../composables/audioEngine'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const player = usePlayerStore()
 const history = useHistoryStore()
 const settings = useSettingsStore()
 const audio = ref<HTMLAudioElement | null>(null)
 const showSleepPicker = ref(false)
-const showEq = ref(false)
 const showSpeedPicker = ref(false)
 let audioConnected = false
 const sleepCustomMin = ref(30)
@@ -160,11 +160,6 @@ onBeforeUnmount(() => {
       @ended="onEnded"
     />
 
-    <!-- EQ / Compressor panel (slides up) -->
-    <Transition name="lyrics-slide">
-      <AudioProcessor v-if="showEq" />
-    </Transition>
-
     <!-- Lyrics panel (slides up) -->
     <Transition name="lyrics-slide">
       <div v-if="player.showLyrics" ref="lyricsPanel" class="lyrics-panel">
@@ -244,7 +239,7 @@ onBeforeUnmount(() => {
         </button>
 
         <!-- EQ -->
-        <button class="ctrl-btn" :class="{ active: showEq }" title="Equalizer / Compressor" @click="showEq = !showEq">
+        <button class="ctrl-btn" title="Equalizer / Compressor" @click="router.push('/equalizer')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <line x1="4"  y1="21" x2="4"  y2="14"/><line x1="4"  y1="10" x2="4"  y2="3"/>
             <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8"  x2="12" y2="3"/>
