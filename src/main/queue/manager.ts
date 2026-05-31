@@ -1,6 +1,8 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync, writeFileSync } from 'fs'
+import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
+import https from 'https'
+import http from 'http'
 import { tmpdir } from 'os'
 import { v4 as uuidv4 } from 'uuid'
 import type { QueueItem, QueueStatus } from '@shared/types/queue'
@@ -13,6 +15,28 @@ import { buildFilename, sanitizeFilenameComponent } from '../services/filename'
 import { loadQueue, saveQueue, loadSettings } from '../storage/store'
 import { httpDownload } from '../services/httpDownload'
 import { getEpisode } from '../services/taddy'
+
+function fetchBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http
+    mod.get(url, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchBuffer(res.headers.location as string).then(resolve).catch(reject)
+      }
+      const chunks: Buffer[] = []
+      res.on('data', (c: Buffer) => chunks.push(c))
+      res.on('end', () => resolve(Buffer.concat(chunks)))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+function saveFolderCover(folder: string, imgBuf: Buffer): void {
+  const dest = join(folder, 'cover.jpg')
+  if (!existsSync(dest)) {
+    try { writeFileSync(dest, imgBuf) } catch { /* non-fatal */ }
+  }
+}
 
 function moveFile(src: string, dest: string): void {
   try {
@@ -502,12 +526,20 @@ class QueueManager {
         lyricsSynced = result.synced
       }
 
+      // Fetch thumbnail once — embed in ID3 and save as cover.jpg in the folder
+      let thumbBuf: Buffer | null = null
+      if (meta?.thumbnailUrl) {
+        try { thumbBuf = await fetchBuffer(meta.thumbnailUrl) } catch { /* non-fatal */ }
+      }
+
       if (meta) {
         await writeID3Tags(tempMp3, {
           title: meta.title,
           artist: meta.artist,
           album: meta.album,
-          lyrics: lyricsPlain ?? undefined
+          year: meta.year ? String(meta.year) : undefined,
+          lyrics: lyricsPlain ?? undefined,
+          thumbBuf: thumbBuf ?? undefined,
         })
       }
 
@@ -554,6 +586,11 @@ class QueueManager {
 
       const finalPath = join(targetFolder, `${filename}.mp3`)
       moveFile(tempMp3, finalPath)
+
+      // Save cover.jpg once per folder (first track wins)
+      if (thumbBuf) {
+        saveFolderCover(targetFolder, thumbBuf)
+      }
 
       // Save synced LRC sidecar next to the MP3
       if (lyricsSynced) {

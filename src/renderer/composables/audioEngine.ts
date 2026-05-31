@@ -132,10 +132,11 @@ let eqBypass:    GainNode | null = null
 let eqFilters:   BiquadFilterNode[] = []
 
 // MB compressor nodes
-let mbInput:     GainNode | null = null
+let mbInput:       GainNode | null = null
 let mbBandNodes: Array<{ hpf: BiquadFilterNode | null; lpf: BiquadFilterNode | null; comp: DynamicsCompressorNode; makeup: GainNode }> = []
-let mbMerge:     GainNode | null = null
-let mbBypass:    GainNode | null = null
+let mbMerge:       GainNode | null = null
+let mbDirectGain:  GainNode | null = null  // direct path when MB is bypassed
+let mbBypass:      GainNode | null = null
 
 // FX nodes (inserted after mbBypass, before analyser)
 let bassFilter:   BiquadFilterNode | null = null
@@ -221,6 +222,12 @@ function buildGraph(audioEl: HTMLAudioElement) {
   eqBypass.connect(mbInput)
 
   // ── Multiband compressor ──────────────────────────────────────────
+  // Direct bypass path: used when MB is disabled
+  mbDirectGain = c.createGain()
+  mbDirectGain.gain.value = mbSettings.enabled ? 0 : 1
+  mbInput.connect(mbDirectGain)
+  mbDirectGain.connect(mbMerge!)
+
   mbBandNodes = MB_BANDS.map((def, i) => {
     const bs = mbSettings.bands[i]
 
@@ -231,7 +238,8 @@ function buildGraph(audioEl: HTMLAudioElement) {
     comp.release.value   = bs.release  / 1000
 
     const makeup = c.createGain()
-    makeup.gain.value = dbToLinear(bs.makeupGain)
+    // When MB is disabled at startup, band gains are 0
+    makeup.gain.value = mbSettings.enabled ? dbToLinear(bs.makeupGain) : 0
 
     let hpf: BiquadFilterNode | null = null
     let lpf: BiquadFilterNode | null = null
@@ -377,6 +385,13 @@ export function applyEqEnabled() {
 }
 
 export function applyMbEnabled() {
+  if (mbDirectGain) mbDirectGain.gain.value = mbSettings.enabled ? 0 : 1
+  if (mbBandNodes.length) {
+    mbBandNodes.forEach((nodes, i) => {
+      const bs = mbSettings.bands[i]
+      nodes.makeup.gain.value = mbSettings.enabled && bs.enabled ? dbToLinear(bs.makeupGain) : 0
+    })
+  }
   saveMb({ ...mbSettings })
 }
 
@@ -395,8 +410,7 @@ export function setMbParam(
   if (param === 'release')   nodes.comp.release.value   = (value as number) / 1000
   if (param === 'makeupGain') nodes.makeup.gain.value   = dbToLinear(value as number)
   if (param === 'enabled') {
-    // Mute disabled band by setting makeup gain to 0
-    nodes.makeup.gain.value = bs.enabled ? dbToLinear(bs.makeupGain) : 0
+    nodes.makeup.gain.value = mbSettings.enabled && bs.enabled ? dbToLinear(bs.makeupGain) : 0
   }
   saveMb({ ...mbSettings })
 }

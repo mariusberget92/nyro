@@ -45,61 +45,75 @@ function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string
   }
 }
 
-export function scanLibrary(outputFolder: string, cacheDir: string): LibraryScanResult {
+async function processFile(filePath: string, outputFolder: string, cacheDir: string): Promise<LibraryTrack> {
+  const id = createHash('md5').update(filePath).digest('hex')
+  const ext = extname(filePath).toLowerCase()
+  const source = sourceFromPath(filePath, outputFolder)
+
+  if (AUDIO_EXTS.has(ext)) {
+    try {
+      const tags = await NodeID3.Promise.read(filePath)
+      let coverPath: string | undefined
+      const pic = (tags.image as any)
+      if (pic && pic.imageBuffer) {
+        coverPath = saveCover(pic.imageBuffer, cacheDir, id)
+      }
+
+      // Fall back to cover.jpg sidecar in the same folder if no embedded cover
+      if (!coverPath) {
+        const sideCover = join(dirname(filePath), 'cover.jpg')
+        if (existsSync(sideCover)) coverPath = sideCover
+      }
+
+      const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
+      const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
+
+      return {
+        id,
+        path: filePath,
+        title: tags.title || basename(filePath, ext),
+        artist: tags.artist || tags.performerInfo || 'Unknown Artist',
+        album: tags.album || 'Unknown Album',
+        year: tags.year ? parseInt(tags.year) : undefined,
+        trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
+        genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
+        coverPath,
+        lrcPath: resolvedLrcPath,
+        source,
+      } satisfies LibraryTrack
+    } catch {
+      return {
+        id, path: filePath,
+        title: basename(filePath, ext),
+        artist: 'Unknown Artist',
+        album: 'Unknown Album',
+        source,
+      } satisfies LibraryTrack
+    }
+  }
+
+  return {
+    id, path: filePath,
+    title: basename(filePath, ext),
+    artist: 'Unknown Artist',
+    album: 'Unknown Album',
+    source: 'video',
+  } satisfies LibraryTrack
+}
+
+const BATCH = 5
+
+export async function scanLibrary(outputFolder: string, cacheDir: string): Promise<LibraryScanResult> {
   mkdirSync(cacheDir, { recursive: true })
   const files = walkDir(outputFolder)
+  const tracks: LibraryTrack[] = []
 
-  const tracks: LibraryTrack[] = files.map((filePath) => {
-    const id = createHash('md5').update(filePath).digest('hex')
-    const ext = extname(filePath).toLowerCase()
-    const source = sourceFromPath(filePath, outputFolder)
-
-    if (AUDIO_EXTS.has(ext)) {
-      try {
-        const tags = NodeID3.read(filePath)
-        let coverPath: string | undefined
-        const pic = (tags.image as any)
-        if (pic && pic.imageBuffer) {
-          coverPath = saveCover(pic.imageBuffer, cacheDir, id)
-        }
-
-        // Check for .lrc sidecar next to the audio file
-        const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
-        const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
-
-        return {
-          id,
-          path: filePath,
-          title: tags.title || basename(filePath, ext),
-          artist: tags.artist || tags.performerInfo || 'Unknown Artist',
-          album: tags.album || 'Unknown Album',
-          year: tags.year ? parseInt(tags.year) : undefined,
-          trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
-          genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
-          coverPath,
-          lrcPath: resolvedLrcPath,
-          source,
-        } satisfies LibraryTrack
-      } catch {
-        return {
-          id, path: filePath,
-          title: basename(filePath, ext),
-          artist: 'Unknown Artist',
-          album: 'Unknown Album',
-          source,
-        } satisfies LibraryTrack
-      }
-    }
-
-    // Video files — no ID3
-    return {
-      id, path: filePath,
-      title: basename(filePath, ext),
-      artist: 'Unknown Artist',
-      album: 'Unknown Album',
-      source: 'video',
-    } satisfies LibraryTrack
-  })
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH)
+    const results = await Promise.all(batch.map(f => processFile(f, outputFolder, cacheDir)))
+    tracks.push(...results)
+    await new Promise<void>(res => setImmediate(res))
+  }
 
   return { tracks, scannedAt: Date.now() }
 }
