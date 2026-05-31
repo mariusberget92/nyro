@@ -5,9 +5,9 @@ defineEmits<{ close: [] }>()
 
 const colors = { success: 'var(--ok)', error: 'var(--bad)', info: 'var(--accent)' }
 const glowColors = {
-  success: 'rgba(163, 190, 140, 0.15)',
-  error: 'rgba(191, 97, 106, 0.15)',
-  info: 'rgba(136, 192, 208, 0.15)'
+  success: 'rgba(63, 185, 80, 0.15)',
+  error: 'rgba(248, 81, 73, 0.15)',
+  info: 'rgba(61, 127, 255, 0.15)'
 }
 const toastStyle = computed(() => ({
   borderLeftColor: colors[props.type],

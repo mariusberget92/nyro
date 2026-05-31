@@ -178,7 +178,7 @@ function handleSave(_id: string, _artist: string, _title: string) {
 }
 .icon-btn:hover { background: var(--bg-3); color: var(--tx-dim); }
 .icon-btn.active { background: var(--accent-glow); color: var(--accent); }
-.icon-btn.danger:hover { color: var(--bad); background: rgba(191,97,106,0.1); }
+.icon-btn.danger:hover { color: var(--bad); background: rgba(248,81,73,0.1); }
 
 .primary-btn {
   display: flex; align-items: center; gap: 6px;

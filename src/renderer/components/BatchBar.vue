@@ -43,7 +43,7 @@ async function removeSelected() {
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
-  background: rgba(26,30,42,0.92);
+  background: rgba(18,24,32,0.92);
   backdrop-filter: blur(14px);
   border: 1px solid var(--accent-glow);
   border-radius: 10px;

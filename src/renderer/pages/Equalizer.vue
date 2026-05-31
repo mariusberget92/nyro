@@ -633,11 +633,11 @@ function ratioLabel(r: number) { return r >= 20 ? '∞:1' : `${r}:1` }
   flex-shrink: 0;
 }
 .bass-icon    { background: var(--accent-glow); color: var(--accent); }
-.treble-icon  { background: rgba(163,190,140,0.12); color: var(--ok); }
-.stereo-icon  { background: rgba(180,142,173,0.12); color: var(--conv); }
-.reverb-icon  { background: rgba(235,203,139,0.12); color: var(--warn); }
+.treble-icon  { background: rgba(63,185,80,0.12); color: var(--ok); }
+.stereo-icon  { background: rgba(124,92,255,0.12); color: var(--conv); }
+.reverb-icon  { background: rgba(210,153,34,0.12); color: var(--warn); }
 .cf-icon      { background: var(--accent-glow); color: var(--accent-2); }
-.limiter-icon { background: rgba(191,97,106,0.12);  color: var(--bad); }
+.limiter-icon { background: rgba(248,81,73,0.12); color: var(--bad); }
 .fx-name { font-size: 13px; font-weight: 700; color: var(--tx); }
 .fx-controls { display: flex; flex-direction: column; gap: 0; }
 .fx-row { border-top: 1px solid var(--line); padding: 7px 0; display: flex; align-items: center; gap: 10px; }

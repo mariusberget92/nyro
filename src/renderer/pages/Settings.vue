@@ -369,7 +369,7 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
 .key-set-badge {
   display: inline-block; margin-left: 8px;
   padding: 1px 6px; border-radius: 4px;
-  background: rgba(34, 197, 94, 0.15); color: #22c55e;
+  background: rgba(63, 185, 80, 0.15); color: var(--ok);
   font-size: 9px; font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
 }
 .link { color: var(--accent); text-decoration: none; }
@@ -378,7 +378,7 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
 .cookie-method { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--bg-2); border-radius: 8px; border: 1px solid var(--line-2); }
 .cookie-method.dimmed { opacity: 0.5; pointer-events: none; }
 .method-label { font-size: 10.5px; font-weight: 700; color: var(--tx-faint); letter-spacing: 0.05em; text-transform: uppercase; }
-.recommended-tag { font-size: 9px; background: rgba(163,190,140,0.15); color: var(--ok); border-radius: 3px; padding: 1px 5px; margin-left: 6px; text-transform: none; font-style: normal; font-weight: 700; letter-spacing: 0; }
+.recommended-tag { font-size: 9px; background: rgba(63,185,80,0.15); color: var(--ok); border-radius: 3px; padding: 1px 5px; margin-left: 6px; text-transform: none; font-style: normal; font-weight: 700; letter-spacing: 0; }
 .disabled-tag { font-size: 9px; color: var(--tx-faint); text-transform: none; font-style: normal; margin-left: 6px; }
 .disabled-section { opacity: 0.5; pointer-events: none; }
 .flex-wrap { flex-wrap: wrap; }

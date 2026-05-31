@@ -43,9 +43,9 @@ export interface MbBandDef {
 
 export const MB_BANDS: MbBandDef[] = [
   { label: 'Low',      color: '#3d7fff', crossLow: null, crossHigh: 250  },
-  { label: 'Low-Mid',  color: '#a3be8c', crossLow: 250,  crossHigh: 2000 },
-  { label: 'High-Mid', color: '#ebcb8b', crossLow: 2000, crossHigh: 8000 },
-  { label: 'High',     color: '#b48ead', crossLow: 8000, crossHigh: null },
+  { label: 'Low-Mid',  color: '#3fb950', crossLow: 250,  crossHigh: 2000 },
+  { label: 'High-Mid', color: '#d29922', crossLow: 2000, crossHigh: 8000 },
+  { label: 'High',     color: '#7c5cff', crossLow: 8000, crossHigh: null },
 ]
 
 // ── FX definitions ───────────────────────────────────────────────────────────

@@ -581,7 +581,7 @@ function onDrop(toIdx: number) {
   font-family: 'JetBrains Mono', monospace;
 }
 .tr-source.music   { background: var(--accent-glow); color: var(--accent); }
-.tr-source.podcast { background: rgba(163,190,140,0.12); color: var(--ok); }
+.tr-source.podcast { background: rgba(63,185,80,0.12); color: var(--ok); }
 .tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
 .remove-track-btn {
   width: 22px; height: 22px; border: none; background: none; color: var(--tx-faint);

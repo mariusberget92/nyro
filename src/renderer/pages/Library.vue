@@ -724,8 +724,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 }
 .bulk-btn:hover:not(:disabled) { background: var(--bg-3); color: var(--tx); }
 .bulk-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.bulk-btn--delete { border-color: rgba(191,97,106,0.4); color: var(--bad); }
-.bulk-btn--delete:hover:not(:disabled) { background: rgba(191,97,106,0.15); }
+.bulk-btn--delete { border-color: rgba(248,81,73,0.4); color: var(--bad); }
+.bulk-btn--delete:hover:not(:disabled) { background: rgba(248,81,73,0.15); }
 .bulk-bar-enter-active, .bulk-bar-leave-active { transition: height 0.15s, opacity 0.15s; }
 .bulk-bar-enter-from, .bulk-bar-leave-to { height: 0; opacity: 0; }
 

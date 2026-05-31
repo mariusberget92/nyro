@@ -315,14 +315,14 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   transition: opacity 0.15s;
   width: 100%;
 }
-.bin-pill--ok  { background: color-mix(in srgb, #a3be8c 15%, transparent); color: #a3be8c; }
-.bin-pill--err { background: color-mix(in srgb, #bf616a 15%, transparent); color: #bf616a; }
+.bin-pill--ok  { background: color-mix(in srgb, var(--ok)  15%, transparent); color: var(--ok); }
+.bin-pill--err { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
 .bin-pill--checking { background: var(--bg-2); color: var(--tx-faint); }
 .bin-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
-.bin-pill--ok  .bin-dot { background: #a3be8c; box-shadow: 0 0 4px #a3be8c; }
-.bin-pill--err .bin-dot { background: #bf616a; box-shadow: 0 0 4px #bf616a; }
+.bin-pill--ok  .bin-dot { background: var(--ok);  box-shadow: 0 0 4px var(--ok); }
+.bin-pill--err .bin-dot { background: var(--bad); box-shadow: 0 0 4px var(--bad); }
 .bin-pill--checking .bin-dot { background: var(--tx-faint); }
 .bin-dot--spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

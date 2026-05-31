@@ -348,8 +348,8 @@ const errorDetails = computed(() => {
   transition: color 0.15s, transform 0.1s;
   flex-shrink: 0;
 }
-.heart-btn:hover { color: #e06c75; }
-.heart-btn--liked { color: #e06c75; }
+.heart-btn:hover { color: var(--bad); }
+.heart-btn--liked { color: var(--bad); }
 .heart-btn--liked:hover { transform: scale(1.2); }
 
 /* ── Hover overlay with action buttons ───────────────── */
