@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
-import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
-import { join, extname, basename, dirname } from 'path'
+import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs'
+import { join, extname, basename } from 'path'
 import NodeID3 from 'node-id3'
 import type { LibraryTrack, LibraryScanResult } from '@shared/types/library'
 
@@ -33,10 +33,8 @@ function sourceFromPath(filePath: string, outputFolder: string): LibraryTrack['s
 
 function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string | undefined {
   try {
-    // If a manually-set PNG cover exists, preserve it instead of overwriting with the ID3 JPEG extract
     const pngPath = join(cacheDir, `${trackId}.png`)
     if (existsSync(pngPath)) return pngPath
-
     const coverPath = join(cacheDir, `${trackId}.jpg`)
     writeFileSync(coverPath, coverData)
     return coverPath
@@ -45,61 +43,68 @@ function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string
   }
 }
 
-export function scanLibrary(outputFolder: string, cacheDir: string): LibraryScanResult {
+function processFile(filePath: string, outputFolder: string, cacheDir: string): LibraryTrack {
+  const id = createHash('md5').update(filePath).digest('hex')
+  const ext = extname(filePath).toLowerCase()
+  const source = sourceFromPath(filePath, outputFolder)
+
+  if (AUDIO_EXTS.has(ext)) {
+    try {
+      const tags = NodeID3.read(filePath)
+      let coverPath: string | undefined
+      const pic = (tags.image as any)
+      if (pic?.imageBuffer) {
+        coverPath = saveCover(pic.imageBuffer, cacheDir, id)
+      }
+      const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
+      return {
+        id, path: filePath,
+        title: tags.title || basename(filePath, ext),
+        artist: tags.artist || tags.performerInfo || 'Unknown Artist',
+        album: tags.album || 'Unknown Album',
+        year: tags.year ? parseInt(tags.year) : undefined,
+        trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
+        genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
+        coverPath,
+        lrcPath: existsSync(lrcPath) ? lrcPath : undefined,
+        source,
+      } satisfies LibraryTrack
+    } catch {
+      return {
+        id, path: filePath,
+        title: basename(filePath, ext),
+        artist: 'Unknown Artist',
+        album: 'Unknown Album',
+        source,
+      } satisfies LibraryTrack
+    }
+  }
+
+  return {
+    id, path: filePath,
+    title: basename(filePath, ext),
+    artist: 'Unknown Artist',
+    album: 'Unknown Album',
+    source: 'video',
+  } satisfies LibraryTrack
+}
+
+// Async scan that yields the main thread between each file so IPC stays responsive
+export async function scanLibrary(outputFolder: string, cacheDir: string): Promise<LibraryScanResult> {
   mkdirSync(cacheDir, { recursive: true })
   const files = walkDir(outputFolder)
+  const tracks: LibraryTrack[] = []
 
-  const tracks: LibraryTrack[] = files.map((filePath) => {
-    const id = createHash('md5').update(filePath).digest('hex')
-    const ext = extname(filePath).toLowerCase()
-    const source = sourceFromPath(filePath, outputFolder)
-
-    if (AUDIO_EXTS.has(ext)) {
-      try {
-        const tags = NodeID3.read(filePath)
-        let coverPath: string | undefined
-        const pic = (tags.image as any)
-        if (pic && pic.imageBuffer) {
-          coverPath = saveCover(pic.imageBuffer, cacheDir, id)
-        }
-
-        // Check for .lrc sidecar next to the audio file
-        const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
-        const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
-
-        return {
-          id,
-          path: filePath,
-          title: tags.title || basename(filePath, ext),
-          artist: tags.artist || tags.performerInfo || 'Unknown Artist',
-          album: tags.album || 'Unknown Album',
-          year: tags.year ? parseInt(tags.year) : undefined,
-          trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
-          genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
-          coverPath,
-          lrcPath: resolvedLrcPath,
-          source,
-        } satisfies LibraryTrack
-      } catch {
-        return {
-          id, path: filePath,
-          title: basename(filePath, ext),
-          artist: 'Unknown Artist',
-          album: 'Unknown Album',
-          source,
-        } satisfies LibraryTrack
-      }
+  // Process in batches of 10, yielding between each batch
+  const BATCH = 10
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH)
+    for (const f of batch) {
+      tracks.push(processFile(f, outputFolder, cacheDir))
     }
-
-    // Video files — no ID3
-    return {
-      id, path: filePath,
-      title: basename(filePath, ext),
-      artist: 'Unknown Artist',
-      album: 'Unknown Album',
-      source: 'video',
-    } satisfies LibraryTrack
-  })
+    // Yield to the event loop so IPC and download progress can continue
+    await new Promise<void>(res => setImmediate(res))
+  }
 
   return { tracks, scannedAt: Date.now() }
 }

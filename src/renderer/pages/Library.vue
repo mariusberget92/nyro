@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
 import { useViewStore } from '../stores/viewStore'
@@ -9,6 +9,8 @@ import type { LibraryAlbum, LibraryArtist, LibraryTrack } from '@shared/types/li
 const lib    = useLibraryStore()
 const player = usePlayerStore()
 const views  = useViewStore()
+
+onMounted(() => { if (lib.tracks.length === 0) lib.load() })
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
