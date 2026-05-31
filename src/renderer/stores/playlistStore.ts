@@ -8,6 +8,7 @@ export interface CustomPlaylist {
   year: number
   createdAt: number
   tracks: LibraryTrack[]
+  coverPath?: string
 }
 
 const STORAGE_KEY = 'nyro-playlists'
@@ -43,6 +44,13 @@ export const usePlaylistStore = defineStore('playlists', {
       this.playlists.push(pl)
       saveToStorage(this.playlists)
       return pl
+    },
+
+    setCover(id: string, coverPath: string) {
+      const pl = this.playlists.find(p => p.id === id)
+      if (!pl) return
+      pl.coverPath = coverPath
+      saveToStorage(this.playlists)
     },
 
     update(id: string, patch: Partial<Pick<CustomPlaylist, 'name' | 'description' | 'year'>>) {

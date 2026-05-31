@@ -55,6 +55,24 @@ function totalDuration(pl: CustomPlaylist) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+// ── Cover picker ────────────────────────────────────────
+async function pickCover(pl: CustomPlaylist, e: Event) {
+  e.stopPropagation()
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const imagePath = (file as any).path
+    if (!imagePath) return
+    const coverPath = await window.nyro.invoke<string>('library:set-cover', pl.tracks[0]?.path ?? '', imagePath)
+    plStore.setCover(pl.id, coverPath || imagePath)
+    if (selected.value?.id === pl.id) selected.value = { ...selected.value!, coverPath: coverPath || imagePath }
+  }
+  input.click()
+}
+
 // ── CRUD ────────────────────────────────────────────────
 function openCreate() {
   editingPl.value = null
@@ -151,9 +169,10 @@ function onDrop(toIdx: number) {
             class="pl-card" :class="{ active: selected?.id === pl.id }"
             @click="selected = selected?.id === pl.id ? null : pl"
           >
-            <!-- Cover mosaic (first 4 track covers) -->
+            <!-- Cover: manual override → mosaic → icon -->
             <div class="pl-art">
-              <template v-if="pl.tracks.some(t => t.coverPath)">
+              <div v-if="pl.coverPath" class="pl-art-single" :style="{ backgroundImage: `url('${coverUrl(pl.coverPath)}')` }" />
+              <template v-else-if="pl.tracks.some(t => t.coverPath)">
                 <div class="mosaic">
                   <div
                     v-for="(t, i) in pl.tracks.filter(t => t.coverPath).slice(0, 4)" :key="i"
@@ -171,6 +190,13 @@ function onDrop(toIdx: number) {
               <div class="pl-art-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Set cover" @click.stop="pickCover(pl, $event)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </button>
             </div>
             <div class="pl-card-label-row">
               <span class="pl-card-name">{{ pl.name }}</span>
@@ -199,8 +225,9 @@ function onDrop(toIdx: number) {
       <Transition name="detail">
         <div v-if="selected" class="detail-panel">
           <div class="detail-header">
-            <div class="detail-art">
-              <div v-if="selected.tracks.some(t => t.coverPath)" class="mosaic mosaic--lg">
+            <div class="detail-art" style="cursor:pointer" @click="pickCover(selected, $event)">
+              <div v-if="selected.coverPath" class="pl-art-single pl-art-single--lg" :style="{ backgroundImage: `url('${coverUrl(selected.coverPath)}')` }" />
+              <div v-else-if="selected.tracks.some(t => t.coverPath)" class="mosaic mosaic--lg">
                 <div
                   v-for="(t, i) in selected.tracks.filter(t => t.coverPath).slice(0, 4)" :key="i"
                   class="mosaic-cell"
@@ -439,6 +466,23 @@ function onDrop(toIdx: number) {
 .mosaic { display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; }
 .mosaic-cell { background: var(--bg-3) center/cover no-repeat; }
 .mosaic--lg { width: 110px; height: 110px; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+
+.pl-art-single {
+  width: 100%; height: 100%; border-radius: inherit;
+  background: center/cover no-repeat;
+}
+.pl-art-single--lg { width: 110px; height: 110px; border-radius: 10px; flex-shrink: 0; }
+
+.cover-upload-btn {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 6px;
+  border: none; background: rgba(0,0,0,0.55);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s; z-index: 3;
+}
+.pl-art:hover .cover-upload-btn { opacity: 1; }
+.cover-upload-btn:hover { background: rgba(88,166,255,0.55); }
+
 .pl-art-overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.45);

@@ -47,7 +47,7 @@ const pillColor = computed(() => {
   switch (liveStatus.value) {
     case 'downloading': case 'fetching': return 'pill--active'
     case 'converting': case 'tagging': return 'pill--converting'
-    case 'completed': return 'pill--done'
+    case 'completed': return props.item.skipped ? 'pill--skipped' : 'pill--done'
     case 'failed': case 'cancelled': return 'pill--failed'
     case 'paused': return 'pill--paused'
     default: return 'pill--pending'
@@ -60,7 +60,7 @@ const pillLabel = computed(() => {
     case 'downloading': return 'Downloading'
     case 'converting': return 'Converting'
     case 'tagging': return 'Tagging'
-    case 'completed': return 'Done'
+    case 'completed': return props.item.skipped ? 'Skipped' : 'Done'
     case 'failed': return 'Failed'
     case 'cancelled': return 'Cancelled'
     case 'paused': return 'Paused'
@@ -329,6 +329,7 @@ const errorDetails = computed(() => {
 .pill--active    { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
 .pill--converting{ background: color-mix(in srgb, var(--conv) 18%, transparent); color: var(--conv); }
 .pill--done      { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.pill--skipped   { background: color-mix(in srgb, var(--tx-faint) 18%, transparent); color: var(--tx-faint); }
 .pill--failed    { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
 .pill--paused    { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 

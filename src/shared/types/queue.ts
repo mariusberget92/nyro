@@ -36,6 +36,7 @@ export interface QueueItem {
   outputFolder?: string
   albumOverride?: string
   liked?: boolean
+  skipped?: boolean
 }
 
 export interface QueueProgressPayload {

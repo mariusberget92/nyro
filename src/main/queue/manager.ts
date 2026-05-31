@@ -38,6 +38,36 @@ function saveFolderCover(folder: string, imgBuf: Buffer): void {
   }
 }
 
+function resolveOutputPath(item: QueueItem, settings: ReturnType<typeof loadSettings>): string | null {
+  const meta = item.metadata
+  if (!meta) return null
+
+  const baseFolder = item.outputFolder || settings.outputFolder
+  const isVideo = item.downloadMode === 'video'
+  const ext = isVideo ? 'mp4' : 'mp3'
+
+  if (isVideo) {
+    const filename = buildFilename({ title: meta.title, artist: meta.artist, settings })
+    return join(baseFolder, 'Videos', `${filename}.${ext}`)
+  }
+
+  let targetFolder = baseFolder
+  const effectiveAlbum = item.albumOverride || meta.album
+  if (effectiveAlbum) {
+    const safeAlbum = sanitizeFilenameComponent(effectiveAlbum)
+    const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
+    targetFolder = join(baseFolder, 'Albums', folderName)
+  } else if (item.playlistTitle) {
+    targetFolder = join(baseFolder, 'Playlists', sanitizeFilenameComponent(item.playlistTitle))
+  } else {
+    const uploaderName = cleanUploader((meta as any).uploader || '')
+    if (uploaderName) targetFolder = join(baseFolder, 'Artists', sanitizeFilenameComponent(uploaderName))
+  }
+
+  const filename = buildFilename({ title: meta.title, artist: meta.artist, settings })
+  return join(targetFolder, `${filename}.${ext}`)
+}
+
 function moveFile(src: string, dest: string): void {
   try {
     renameSync(src, dest)
@@ -431,6 +461,21 @@ class QueueManager {
 
     const settings = loadSettings()
     const tempDir = tmpdir()
+
+    // Skip if the file already exists at the expected output location
+    const expectedPath = resolveOutputPath(item, settings)
+    if (expectedPath && existsSync(expectedPath)) {
+      this.updateItem(item.id, {
+        status: 'completed',
+        progress: 100,
+        outputPath: expectedPath,
+        completedAt: Date.now(),
+        skipped: true,
+      })
+      this.emitStatusChanged(item.id, 'completed')
+      this.emitCompleted(item.id, expectedPath)
+      return
+    }
 
     const onProgress: ProgressCallback = (id, progress, status) => {
       this.updateItem(id, { progress, status })
