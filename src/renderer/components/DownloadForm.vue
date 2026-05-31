@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useQueueStore } from '../stores/queueStore'
 import { useToastStore } from '../stores/toastStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 const PATTERNS = [
   /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
@@ -17,11 +18,30 @@ const PATTERNS = [
 
 const queueStore = useQueueStore()
 const toastStore = useToastStore()
+const settingsStore = useSettingsStore()
 
 const input = ref('')
 const loading = ref(false)
 const error = ref('')
 const batchProgress = ref('')   // e.g. "3 / 7"
+
+// Per-download folder override (empty = use global setting)
+const folderOverride = ref('')
+const folderLabel = computed(() => {
+  if (folderOverride.value) return folderOverride.value.split(/[\\/]/).pop() || folderOverride.value
+  return settingsStore.settings.outputFolder
+    ? settingsStore.settings.outputFolder.split(/[\\/]/).pop() || settingsStore.settings.outputFolder
+    : 'No folder set'
+})
+
+async function pickFolder() {
+  const picked = await window.nyro.invoke<string | null>('dialog:select-folder')
+  if (picked) folderOverride.value = picked
+}
+
+function clearFolderOverride() {
+  folderOverride.value = ''
+}
 
 // Batch mode when there are 2+ non-empty lines
 const lines = computed(() =>
@@ -53,7 +73,7 @@ async function handleAdd() {
   for (const url of urls) {
     if (isBatch.value) batchProgress.value = `${done} / ${urls.length}`
     try {
-      await queueStore.addUrl(url)
+      await queueStore.addUrl(url, folderOverride.value || undefined)
       done++
     } catch (e: any) {
       errors.push(e?.message || url)
@@ -122,6 +142,17 @@ function onKeydown(e: KeyboardEvent) {
       </button>
     </div>
 
+    <!-- Folder row -->
+    <div class="folder-row">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="folder-icon">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      <span class="folder-label" :class="{ override: !!folderOverride }" :title="folderOverride || settingsStore.settings.outputFolder">{{ folderLabel }}</span>
+      <span v-if="folderOverride" class="folder-badge">custom</span>
+      <button class="folder-btn" @click="pickFolder">Browse…</button>
+      <button v-if="folderOverride" class="folder-clear" title="Reset to default" @click="clearFolderOverride">✕</button>
+    </div>
+
     <div class="bottom-row">
       <p v-if="error" class="error-msg">{{ error }}</p>
       <p v-if="isBatch" class="batch-hint">
@@ -188,6 +219,42 @@ function onKeydown(e: KeyboardEvent) {
 .add-btn:disabled { cursor: not-allowed; }
 .add-btn.empty { opacity: 0.35; }
 .add-btn:disabled:not(.empty) { opacity: 0.65; }
+
+/* ── Folder row ──────────────────────────────────── */
+.folder-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--line);
+  font-size: 11px; color: var(--tx-faint);
+  min-width: 0;
+}
+.folder-icon { flex-shrink: 0; color: var(--tx-faint); }
+.folder-label {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: 'JetBrains Mono', monospace;
+}
+.folder-label.override { color: var(--accent); }
+.folder-badge {
+  flex-shrink: 0; font-size: 9px; font-weight: 700;
+  padding: 1px 5px; border-radius: 3px;
+  background: rgba(136,192,208,0.15); color: var(--accent);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.folder-btn {
+  flex-shrink: 0; padding: 2px 8px;
+  background: var(--bg-3); border: 1px solid var(--line-2);
+  color: var(--tx-dim); border-radius: 4px; font-size: 10.5px;
+  cursor: pointer; transition: background 0.12s;
+}
+.folder-btn:hover { background: var(--bg-4); color: var(--tx); }
+.folder-clear {
+  flex-shrink: 0; width: 18px; height: 18px;
+  background: none; border: none; color: var(--tx-faint);
+  cursor: pointer; font-size: 10px; display: flex;
+  align-items: center; justify-content: center; border-radius: 3px;
+}
+.folder-clear:hover { color: var(--bad); }
 
 .bottom-row { min-height: 16px; }
 .error-msg { font-size: 11.5px; color: var(--bad); margin: 0; }

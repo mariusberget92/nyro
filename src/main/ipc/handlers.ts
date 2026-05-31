@@ -31,8 +31,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
 
   // queue:add — validate URL, fetch metadata, create queue items
-  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string) => {
-    return await queueManager.addUrl(url)
+  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string, outputFolder?: string) => {
+    return await queueManager.addUrl(url, outputFolder)
   })
 
   // queue:remove — remove an item from the queue
@@ -121,8 +121,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   })
 
   // podcast:add-episode
-  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string) => {
-    return queueManager.addPodcastEpisode(episodeId)
+  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string, outputFolder?: string) => {
+    return queueManager.addPodcastEpisode(episodeId, outputFolder)
   })
 
   // library:scan — walk output folder, read ID3 tags

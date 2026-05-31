@@ -36,6 +36,7 @@ export interface QueueItem {
   addedAt: number
   completedAt?: number
   downloadMode?: 'audio' | 'video'
+  outputFolder?: string   // overrides the global setting for this item
   liked?: boolean
 }
 

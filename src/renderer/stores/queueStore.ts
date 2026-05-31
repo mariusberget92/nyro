@@ -25,8 +25,8 @@ export const useQueueStore = defineStore('queue', {
       if (!window.nyro) return
       this.items = await window.nyro.invoke<QueueItem[]>('queue:get-all')
     },
-    async addUrl(url: string) {
-      const newItems = await window.nyro.invoke<QueueItem[]>('queue:add', url)
+    async addUrl(url: string, outputFolder?: string) {
+      const newItems = await window.nyro.invoke<QueueItem[]>('queue:add', url, outputFolder)
       const existingIds = new Set(newItems.map(i => i.id))
       this.items = [...this.items.filter(i => !existingIds.has(i.id)), ...newItems]
     },

@@ -85,7 +85,7 @@ class QueueManager {
     return [...this.queue]
   }
 
-  async addPodcastEpisode(episodeId: string): Promise<QueueItem> {
+  async addPodcastEpisode(episodeId: string, outputFolder?: string): Promise<QueueItem> {
     const settings = loadSettings()
     if (!settings.taddyUserId || !settings.taddyApiKey) throw new Error('Taddy credentials not set')
     const ep = await getEpisode(episodeId, settings.taddyUserId, settings.taddyApiKey)
@@ -106,13 +106,14 @@ class QueueManager {
         audioUrl: ep.audioUrl
       }
     }
+    if (outputFolder) item.outputFolder = outputFolder
     this.queue.push(item)
     this.schedulePersist()
     this.emitStatusChanged(item.id, 'pending')
     return item
   }
 
-  async addUrl(url: string): Promise<QueueItem[]> {
+  async addUrl(url: string, outputFolder?: string): Promise<QueueItem[]> {
     if (!this.isValidYouTubeUrl(url)) {
       throw new Error('Invalid URL')
     }
@@ -172,6 +173,7 @@ class QueueManager {
         addedAt: Date.now(),
         downloadMode: settings.downloadMode,
         playlistTitle: playlistTitle ?? undefined,
+        outputFolder: outputFolder || undefined,
         metadata: {
           title: title || meta.title || 'Unknown Title',
           artist: artist || cleanUploader(meta.uploader) || 'Unknown Artist',
@@ -331,7 +333,7 @@ class QueueManager {
       })
 
       // Step 3: Move to Podcasts/{showName}/
-      const baseFolder = settings.outputFolder
+      const baseFolder = item.outputFolder || settings.outputFolder
       const safeShow = sanitizeFilenameComponent(meta.podcastShow || 'Unknown Show')
       const targetFolder = join(baseFolder, 'Podcasts', safeShow)
 
@@ -407,7 +409,7 @@ class QueueManager {
         this.updateItem(item.id, { status: 'tagging', progress: 95 })
         this.emitStatusChanged(item.id, 'tagging')
 
-        const baseFolder = settings.outputFolder
+        const baseFolder = item.outputFolder || settings.outputFolder
         const targetFolder = join(baseFolder, 'Videos')
 
         if (!existsSync(targetFolder)) {
@@ -485,7 +487,7 @@ class QueueManager {
       }
 
       // Step 4: Move to output folder
-      const baseFolder = settings.outputFolder
+      const baseFolder = item.outputFolder || settings.outputFolder
       let targetFolder = baseFolder
 
       if (meta?.album) {
