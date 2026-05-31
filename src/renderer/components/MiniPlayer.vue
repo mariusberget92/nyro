@@ -20,6 +20,7 @@ const sleepCustomMin = ref(30)
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 const speedLabel = computed(() => player.speed === 1 ? '1×' : `${player.speed}×`)
 
+
 // Sleep timer display — remaining time as "Xh Ym" or "Xm"
 const sleepRemaining = computed(() => {
   if (!player.sleepEndsAt) return null
@@ -145,6 +146,15 @@ watch(() => player.currentTrack, (track) => {
   }
 })
 
+// Connect the audio element to the Web Audio engine on first play interaction
+watch(() => player.playing, (playing) => {
+  if (playing && audio.value && !audioConnected) {
+    connectAudioElement(audio.value)
+    audioConnected = true
+  }
+  if (playing) resumeContext()
+}, { flush: 'post' })
+
 onBeforeUnmount(() => {
   audio.value?.pause()
   if (sleepTick) clearInterval(sleepTick)
@@ -197,6 +207,12 @@ onBeforeUnmount(() => {
         <div class="track-text">
           <span class="track-title">{{ player.currentTrack.title }}</span>
           <span class="track-artist">{{ player.currentTrack.artist }}</span>
+          <span
+            v-if="player.currentTrack.path"
+            class="track-path"
+            :title="'Show in Explorer: ' + player.currentTrack.path"
+            @click="window.nyro.invoke('shell:show-in-folder', player.currentTrack!.path!)"
+          >{{ player.currentTrack.path }}</span>
         </div>
       </div>
 
@@ -313,6 +329,7 @@ onBeforeUnmount(() => {
               </div>
             </Transition>
           </div>
+
 
           <!-- Sleep timer button -->
           <div class="sleep-wrap">
@@ -440,6 +457,15 @@ onBeforeUnmount(() => {
   font-size: 11px; color: var(--tx-faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.track-path {
+  font-size: 9px; color: var(--tx-faint); opacity: 0;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; transition: opacity 0.15s;
+  max-width: 100%;
+}
+.track-path:hover { opacity: 1 !important; color: var(--accent); }
+.track-info:hover .track-path { opacity: 0.5; }
 
 /* ── Controls ───────────────────────────── */
 .controls {

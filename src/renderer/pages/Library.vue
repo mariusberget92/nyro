@@ -127,6 +127,36 @@ const detailArtist = computed((): LibraryArtist | null => {
   if (!selected.value || view.value !== 'artists') return null
   return selected.value as LibraryArtist
 })
+
+// ── File reveal ──────────────────────────────────────────
+function revealFile(path: string) {
+  window.nyro.invoke('shell:show-in-folder', path)
+}
+
+// ── Cover upload ──────────────────────────────────────────
+async function pickCoverForAlbum(album: LibraryAlbum, e: Event) {
+  e.stopPropagation()
+  const imagePath = await window.nyro.invoke<string | null>('dialog:select-file', {
+    title: 'Select Cover Image',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+  })
+  if (!imagePath) return
+  for (const track of album.tracks) {
+    await lib.setCover(track.path, imagePath)
+  }
+  // Force cover path update on the album object for reactivity
+  album.coverPath = album.tracks.find(t => t.coverPath)?.coverPath
+}
+
+async function pickCoverForTrack(track: LibraryTrack, e: Event) {
+  e.stopPropagation()
+  const imagePath = await window.nyro.invoke<string | null>('dialog:select-file', {
+    title: 'Select Cover Image',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+  })
+  if (!imagePath) return
+  await lib.setCover(track.path, imagePath)
+}
 </script>
 
 <template>
@@ -145,6 +175,19 @@ const detailArtist = computed((): LibraryArtist | null => {
         </svg>
         <input v-model="searchQ" class="search-input" placeholder="Search…" />
       </div>
+
+      <!-- Select toggle -->
+      <button
+        v-if="view !== 'artists'"
+        class="select-btn" :class="{ active: selectionMode }"
+        @click="selectionMode = !selectionMode; if (!selectionMode) clearSelection()"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Select
+      </button>
 
       <!-- Scan button -->
       <button class="scan-btn" :class="{ scanning: lib.scanning }" @click="lib.scan()">
@@ -183,10 +226,13 @@ const detailArtist = computed((): LibraryArtist | null => {
         <div v-if="view === 'albums'" class="grid">
           <div
             v-for="album in filteredAlbums" :key="album.name + album.artist"
-            class="card" :class="{ active: selected === album }"
-            @click="selected = selected === album ? null : album"
-            @dblclick="playAlbum(album)"
+            class="card" :class="{ active: selected === album, 'sel-active': isAlbumSelected(album) }"
+            @click="selectionMode ? toggleAlbum(album) : (selected = selected === album ? null : album)"
+            @dblclick="!selectionMode && playAlbum(album)"
           >
+            <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(album) }">
+              <svg v-if="isAlbumSelected(album)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
             <div class="card-art" :style="coverUrl(album.coverPath) ? { backgroundImage: `url('${coverUrl(album.coverPath)}')` } : {}">
               <svg v-if="!album.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
                 <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
@@ -194,6 +240,34 @@ const detailArtist = computed((): LibraryArtist | null => {
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Change cover" @click.stop="pickCoverForAlbum(album, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+            </div>
+            <div class="card-label-row">
+              <template v-if="renaming === album">
+                <input
+                  ref="renameInputEl"
+                  v-model="renameVal"
+                  class="rename-input"
+                  @keydown.enter.stop="commitRename(album)"
+                  @keydown.escape.stop="cancelRename"
+                  @blur="commitRename(album)"
+                  @click.stop
+                />
+                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
+              </template>
+              <template v-else>
+                <span class="card-name">{{ album.name }}</span>
+                <button class="rename-btn" title="Rename folder" @click.stop="startRename(album, $event)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </template>
             </div>
             <div class="card-label-row">
               <template v-if="renaming === album">
@@ -246,10 +320,13 @@ const detailArtist = computed((): LibraryArtist | null => {
         <div v-else-if="view === 'podcasts'" class="grid">
           <div
             v-for="show in filteredPodcasts" :key="show.name"
-            class="card" :class="{ active: selected === show }"
-            @click="selected = selected === show ? null : show"
-            @dblclick="playAlbum(show)"
+            class="card" :class="{ active: selected === show, 'sel-active': isAlbumSelected(show) }"
+            @click="selectionMode ? toggleAlbum(show) : (selected = selected === show ? null : show)"
+            @dblclick="!selectionMode && playAlbum(show)"
           >
+            <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(show) }">
+              <svg v-if="isAlbumSelected(show)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
             <div class="card-art" :style="coverUrl(show.coverPath) ? { backgroundImage: `url('${coverUrl(show.coverPath)}')` } : {}">
               <svg v-if="!show.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
                 <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
@@ -258,6 +335,34 @@ const detailArtist = computed((): LibraryArtist | null => {
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Change cover" @click.stop="pickCoverForAlbum(show, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+            </div>
+            <div class="card-label-row">
+              <template v-if="renaming === show">
+                <input
+                  ref="renameInputEl"
+                  v-model="renameVal"
+                  class="rename-input"
+                  @keydown.enter.stop="commitRename(show)"
+                  @keydown.escape.stop="cancelRename"
+                  @blur="commitRename(show)"
+                  @click.stop
+                />
+                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
+              </template>
+              <template v-else>
+                <span class="card-name">{{ show.name }}</span>
+                <button class="rename-btn" title="Rename folder" @click.stop="startRename(show, $event)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </template>
             </div>
             <div class="card-label-row">
               <template v-if="renaming === show">
@@ -292,10 +397,14 @@ const detailArtist = computed((): LibraryArtist | null => {
             v-for="(track, i) in (view === 'tracks' ? filteredTracks : filteredVideos)"
             :key="track.id"
             class="track-row"
-            :class="{ playing: player.currentTrack?.id === track.id }"
-            @dblclick="playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
+            :class="{ playing: player.currentTrack?.id === track.id, 'sel-active': isTrackSelected(track) }"
+            @click="selectionMode && toggleTrack(track)"
+            @dblclick="!selectionMode && playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
           >
-            <span class="tr-num">{{ i + 1 }}</span>
+            <div v-if="selectionMode" class="tr-checkbox" :class="{ checked: isTrackSelected(track) }">
+              <svg v-if="isTrackSelected(track)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span v-else class="tr-num">{{ i + 1 }}</span>
             <div class="tr-thumb" :style="coverUrl(track.coverPath) ? { backgroundImage: `url('${coverUrl(track.coverPath)}')` } : {}">
               <svg v-if="!track.coverPath" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
@@ -304,9 +413,15 @@ const detailArtist = computed((): LibraryArtist | null => {
             <div class="tr-info">
               <span class="tr-title">{{ track.title }}</span>
               <span class="tr-artist">{{ track.artist }}</span>
+              <span class="tr-path" :title="track.path">{{ track.path }}</span>
             </div>
             <span class="tr-album">{{ track.album }}</span>
             <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+            <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -323,6 +438,12 @@ const detailArtist = computed((): LibraryArtist | null => {
                 <svg v-if="!detailAlbum.coverPath" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                   <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
                 </svg>
+                <div class="detail-art-overlay" @click.stop="pickCoverForAlbum(detailAlbum, $event)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span>Change cover</span>
+                </div>
               </div>
               <div class="detail-meta">
                 <span class="detail-label">{{ view === 'podcasts' ? 'PODCAST' : 'ALBUM' }}</span>
@@ -367,9 +488,14 @@ const detailArtist = computed((): LibraryArtist | null => {
                 <span class="tr-num">{{ track.trackNumber ?? i + 1 }}</span>
                 <div class="tr-info">
                   <span class="tr-title">{{ track.title }}</span>
-                  <span class="tr-artist">{{ track.artist }}</span>
+                  <span class="tr-path" :title="track.path">{{ track.path }}</span>
                 </div>
                 <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </template>
@@ -408,8 +534,14 @@ const detailArtist = computed((): LibraryArtist | null => {
                   <span class="tr-num">{{ track.trackNumber ?? i + 1 }}</span>
                   <div class="tr-info">
                     <span class="tr-title">{{ track.title }}</span>
+                    <span class="tr-path" :title="track.path">{{ track.path }}</span>
                   </div>
                   <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                  <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -419,6 +551,23 @@ const detailArtist = computed((): LibraryArtist | null => {
       </Transition>
 
     </div>
+
+    <!-- Bulk action bar -->
+    <Transition name="bulk-bar">
+      <div v-if="selectionMode" class="bulk-bar">
+        <span class="bulk-count">{{ selectedCount }} selected</span>
+        <div class="spacer" />
+        <button class="bulk-btn" @click="selectAll()">Select all</button>
+        <button class="bulk-btn" :disabled="!selectedCount" @click="clearSelection()">Clear</button>
+        <button class="bulk-btn bulk-btn--delete" :disabled="!selectedCount" @click="deleteSelected()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </Transition>
 
   </div>
 </template>
@@ -433,6 +582,60 @@ const detailArtist = computed((): LibraryArtist | null => {
   background: linear-gradient(to bottom, var(--bg-1), var(--bg-0));
   border-bottom: 1px solid var(--line); flex-shrink: 0;
 }
+/* ── Select button ─────────────────────────────────── */
+.select-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.select-btn:hover { background: var(--bg-3); color: var(--tx); }
+.select-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+/* ── Card checkbox ─────────────────────────────────── */
+.card-checkbox {
+  position: absolute; top: 7px; left: 7px; z-index: 3;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bg-3); border: 2px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.12s, border-color 0.12s;
+}
+.card-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.card.sel-active .card-art { box-shadow: 0 0 0 2px var(--accent); }
+
+/* ── Track row checkbox ────────────────────────────── */
+.tr-checkbox {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg-3); border: 2px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.12s, border-color 0.12s;
+}
+.tr-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.track-row.sel-active { background: var(--accent-glow); }
+
+/* ── Bulk action bar ───────────────────────────────── */
+.bulk-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 48px; flex-shrink: 0;
+  background: var(--bg-1); border-top: 1px solid var(--line);
+}
+.bulk-count { font-size: 12px; font-weight: 600; color: var(--tx); }
+.bulk-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--line-2); background: var(--bg-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.bulk-btn:hover:not(:disabled) { background: var(--bg-3); color: var(--tx); }
+.bulk-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.bulk-btn--delete { border-color: rgba(191,97,106,0.4); color: var(--bad); }
+.bulk-btn--delete:hover:not(:disabled) { background: rgba(191,97,106,0.15); }
+.bulk-bar-enter-active, .bulk-bar-leave-active { transition: height 0.15s, opacity 0.15s; }
+.bulk-bar-enter-from, .bulk-bar-leave-to { height: 0; opacity: 0; }
+
 .lib-title { font-size: 15px; font-weight: 800; color: var(--tx); margin: 0; }
 .lib-count { font-size: 10.5px; color: var(--tx-faint); background: var(--bg-2); padding: 2px 7px; border-radius: 20px; }
 .spacer { flex: 1; }
@@ -522,7 +725,7 @@ const detailArtist = computed((): LibraryArtist | null => {
 .view-large .track-list .track-row, .view-xlarge .track-list .track-row { padding: 10px 12px; min-height: 52px; }
 .card {
   background: none; border: none; cursor: pointer; text-align: left;
-  padding: 0; border-radius: 10px;
+  padding: 0; border-radius: 10px; position: relative;
   transition: transform 0.12s;
 }
 .card:hover { transform: translateY(-2px); }
@@ -539,6 +742,18 @@ const detailArtist = computed((): LibraryArtist | null => {
   color: #fff;
 }
 .card-art:hover .card-play-overlay { opacity: 1; }
+
+/* ── Cover upload button (card) ────────────────── */
+.cover-upload-btn {
+  position: absolute; bottom: 6px; right: 6px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+  z-index: 2;
+}
+.card-art:hover .cover-upload-btn { opacity: 1; }
+.cover-upload-btn:hover { background: rgba(136,192,208,0.4); }
 .card-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub  { display: block; font-size: 11px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -582,6 +797,22 @@ const detailArtist = computed((): LibraryArtist | null => {
 .tr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .tr-title { font-size: 12.5px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-artist { font-size: 10.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-path {
+  font-size: 9.5px; color: var(--tx-faint); opacity: 0;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity 0.12s; max-width: 100%;
+}
+.track-row:hover .tr-path { opacity: 0.6; }
+.reveal-btn {
+  flex-shrink: 0; width: 24px; height: 24px;
+  background: none; border: 1px solid var(--line-2);
+  border-radius: 5px; color: var(--tx-faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.track-row:hover .reveal-btn { opacity: 1; }
+.reveal-btn:hover { color: var(--accent); background: var(--accent-glow); border-color: var(--accent); }
 .tr-album { font-size: 11px; color: var(--tx-faint); flex-shrink: 0; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
 
@@ -593,7 +824,15 @@ const detailArtist = computed((): LibraryArtist | null => {
   border-radius: 10px; background: var(--bg-3) center/cover no-repeat;
   display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  position: relative; overflow: hidden; cursor: pointer;
 }
+.detail-art-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  background: rgba(0,0,0,0.55); opacity: 0; transition: opacity 0.15s;
+  color: #fff; font-size: 10px; font-weight: 600;
+}
+.detail-art:hover .detail-art-overlay { opacity: 1; }
 .artist-shape { border-radius: 50%; }
 .detail-meta { display: flex; flex-direction: column; gap: 4px; }
 .detail-label { font-size: 9.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }

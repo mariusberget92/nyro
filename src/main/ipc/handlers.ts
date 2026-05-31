@@ -1,11 +1,13 @@
-import { ipcMain, dialog, BrowserWindow, app } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron'
 import { join } from 'path'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
-import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, unlinkSync, mkdirSync, copyFileSync } from 'fs'
+import { createHash } from 'crypto'
+import NodeID3 from 'node-id3'
 
 let libraryCache: ReturnType<typeof scanLibrary> | null = null
 
@@ -29,8 +31,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
 
   // queue:add — validate URL, fetch metadata, create queue items
-  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string) => {
-    return await queueManager.addUrl(url)
+  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string, outputFolder?: string, albumOverride?: string) => {
+    return await queueManager.addUrl(url, outputFolder, albumOverride)
   })
 
   // queue:remove — remove an item from the queue
@@ -119,8 +121,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   })
 
   // podcast:add-episode
-  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string) => {
-    return queueManager.addPodcastEpisode(episodeId)
+  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string, outputFolder?: string, showName?: string) => {
+    return queueManager.addPodcastEpisode(episodeId, outputFolder, showName)
   })
 
   // library:scan — walk output folder, read ID3 tags
@@ -163,5 +165,48 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       saveLibraryCache(libraryCache)
     }
     return newPath
+  })
+
+  // library:set-cover — copy image to covers cache, embed in ID3, patch cache
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_SET_COVER, async (_event, trackPath: string, imagePath: string) => {
+    const cacheDir = join(app.getPath('userData'), 'covers')
+    mkdirSync(cacheDir, { recursive: true })
+    if (!libraryCache) libraryCache = loadLibraryCache()
+    const id = createHash('md5').update(trackPath).digest('hex')
+    const srcExt = imagePath.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const destExt = srcExt === 'png' ? 'png' : 'jpg'
+    const destPath = join(cacheDir, `${id}.${destExt}`)
+    copyFileSync(imagePath, destPath)
+    const altExt = destExt === 'png' ? 'jpg' : 'png'
+    const altPath = join(cacheDir, `${id}.${altExt}`)
+    if (existsSync(altPath)) try { unlinkSync(altPath) } catch {}
+    const ext = trackPath.split('.').pop()?.toLowerCase() ?? ''
+    if (['mp3', 'm4a', 'flac', 'ogg', 'wav', 'aac'].includes(ext)) {
+      try {
+        const imgBuffer = readFileSync(imagePath)
+        const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
+        NodeID3.update({ image: { mime, type: { id: 3, name: 'front cover' }, description: 'Cover', imageBuffer: imgBuffer } }, trackPath)
+      } catch {}
+    }
+    if (libraryCache) {
+      const track = libraryCache.tracks.find(t => t.path === trackPath)
+      if (track) track.coverPath = destPath
+      saveLibraryCache(libraryCache)
+    }
+    return destPath
+  })
+
+  // library:delete-tracks — delete files from disk and remove from cache
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_DELETE_TRACKS, (_event, paths: string[]) => {
+    for (const p of paths) try { unlinkSync(p) } catch {}
+    if (libraryCache) {
+      libraryCache.tracks = libraryCache.tracks.filter(t => !paths.includes(t.path))
+      saveLibraryCache(libraryCache)
+    }
+  })
+
+  // shell:show-in-folder — reveal a file in Explorer/Finder/Nautilus
+  ipcMain.handle(IPC_CHANNELS.SHELL_SHOW_IN_FOLDER, (_event, filePath: string) => {
+    shell.showItemInFolder(filePath)
   })
 }

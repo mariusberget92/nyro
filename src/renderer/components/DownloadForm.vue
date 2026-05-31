@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useQueueStore } from '../stores/queueStore'
 import { useToastStore } from '../stores/toastStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 const PATTERNS = [
   /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
@@ -17,6 +18,7 @@ const PATTERNS = [
 
 const queueStore = useQueueStore()
 const toastStore = useToastStore()
+const settingsStore = useSettingsStore()
 
 const input = ref('')
 const loading = ref(false)

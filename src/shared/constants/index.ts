@@ -22,11 +22,14 @@ export const IPC_CHANNELS = {
   PODCAST_GET_SHOW: 'podcast:get-show',
   PODCAST_ADD_EPISODE: 'podcast:add-episode',
   // Library
-  UPDATER_STATUS:  'updater:status',   // Main → Renderer push
+  UPDATER_STATUS:  'updater:status',
   LIBRARY_SCAN:          'library:scan',
   LIBRARY_GET:           'library:get',
   LIBRARY_GET_LRC:       'library:get-lrc',
   LIBRARY_RENAME_FOLDER: 'library:rename-folder',
+  LIBRARY_SET_COVER:     'library:set-cover',
+  SHELL_SHOW_IN_FOLDER:  'shell:show-in-folder',
+  LIBRARY_DELETE_TRACKS: 'library:delete-tracks',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',
@@ -35,20 +38,15 @@ export const IPC_CHANNELS = {
 } as const
 
 export const YOUTUBE_URL_PATTERNS = [
-  // YouTube
   /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtu\.be\/[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtube\.com\/playlist\?list=[\w-]+/,
   /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[\w-]+/,
-  // YouTube Music
   /^(https?:\/\/)?music\.youtube\.com\/watch\?v=[\w-]+/,
   /^(https?:\/\/)?music\.youtube\.com\/playlist\?list=[\w-]+/,
   /^(https?:\/\/)?music\.youtube\.com\/browse\/.+/,
-  // SoundCloud
   /^(https?:\/\/)?(www\.)?soundcloud\.com\/.+/,
-  // Bandcamp
   /^(https?:\/\/)?.+\.bandcamp\.com\/.*/,
-  // Vimeo
   /^(https?:\/\/)?(www\.)?vimeo\.com\/.+/,
 ]
 

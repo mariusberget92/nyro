@@ -17,8 +17,8 @@ export const usePlayerStore = defineStore('player', {
     shuffleOrder: [] as number[],
     lrcRaw: null as string | null,
     showLyrics: false,
-    pendingSeek: null as number | null,
-    sleepEndsAt: null as number | null,
+    pendingSeek: null as number | null,  // seconds; consumed by MiniPlayer
+    sleepEndsAt: null as number | null,  // epoch ms; null = timer off
   }),
 
   getters: {

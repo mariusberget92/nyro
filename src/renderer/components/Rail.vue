@@ -111,6 +111,7 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
         </div>
       </button>
 
+
     </div>
 
     <div class="spacer" />

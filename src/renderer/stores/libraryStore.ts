@@ -19,7 +19,6 @@ export const useLibraryStore = defineStore('library', {
         }
         map.get(key)!.tracks.push(t)
       }
-      // Sort tracks within each album by track number
       for (const album of map.values()) {
         album.tracks.sort((a, b) => (a.trackNumber ?? 999) - (b.trackNumber ?? 999))
       }
@@ -35,7 +34,6 @@ export const useLibraryStore = defineStore('library', {
         }
         map.get(t.artist)!.tracks.push(t)
       }
-      // Build album list per artist
       for (const artist of map.values()) {
         const albumMap = new Map<string, LibraryAlbum>()
         for (const t of artist.tracks) {
@@ -84,9 +82,19 @@ export const useLibraryStore = defineStore('library', {
         this.scannedAt = result.scannedAt
       }
     },
+    async deleteTracks(paths: string[]): Promise<void> {
+      await window.nyro.invoke('library:delete-tracks', paths)
+      const pathSet = new Set(paths)
+      this.tracks = this.tracks.filter(t => !pathSet.has(t.path))
+    },
+    async setCover(trackPath: string, imagePath: string): Promise<string> {
+      const coverPath = await window.nyro.invoke<string>('library:set-cover', trackPath, imagePath)
+      const track = this.tracks.find(t => t.path === trackPath)
+      if (track) track.coverPath = coverPath
+      return coverPath
+    },
     async renameFolder(oldPath: string, newName: string): Promise<string> {
       const newPath = await window.nyro.invoke<string>('library:rename-folder', oldPath, newName)
-      // Patch tracks in-memory so UI updates without a full rescan
       for (const t of this.tracks) {
         if (t.path.startsWith(oldPath)) {
           t.path = newPath + t.path.slice(oldPath.length)
