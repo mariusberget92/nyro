@@ -373,12 +373,12 @@ function onDrop(toIdx: number) {
 .create-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 12px; height: 30px; border-radius: 8px;
-  border: 1px solid rgba(136,192,208,0.3);
-  background: linear-gradient(135deg, rgba(136,192,208,0.12), rgba(136,192,208,0.06));
+  border: 1px solid rgba(88,166,255,0.3);
+  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.06));
   color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer;
   transition: box-shadow 0.15s;
 }
-.create-btn:hover { box-shadow: 0 0 10px rgba(136,192,208,0.25); }
+.create-btn:hover { box-shadow: 0 0 10px rgba(88,166,255,0.25); }
 
 /* ── Body ────────────────────────────────────────────── */
 .pl-body { flex: 1; display: flex; overflow: hidden; }

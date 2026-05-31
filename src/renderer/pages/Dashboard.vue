@@ -192,7 +192,7 @@ function handleSave(_id: string, _artist: string, _title: string) {
   transition: background 0.15s;
 }
 .primary-btn:hover {
-  background: #9ecfde;
+  background: var(--accent-2);
 }
 
 .form-panel {

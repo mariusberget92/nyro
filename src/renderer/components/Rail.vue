@@ -232,7 +232,7 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   color: var(--tx-dim);
 }
 .nav-btn.active {
-  background: rgba(136,192,208,0.12);
+  background: var(--accent-glow);
   color: var(--accent);
 }
 .nav-btn.disabled {

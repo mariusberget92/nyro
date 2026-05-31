@@ -16,6 +16,10 @@ const taddyApiKey = ref(s.settings.taddyApiKey || '')
 const taddySaving = ref(false)
 const taddySaved = ref(false)
 
+const apiKeyInput = ref(s.settings.listenNotesApiKey || '')
+const apiKeySaving = ref(false)
+const apiKeySaved = ref(false)
+
 const taddyIsSet = computed(() => !!s.settings.taddyUserId && !!s.settings.taddyApiKey)
 
 async function saveTaddy() {
@@ -226,7 +230,7 @@ async function saveApiKey() {
             @input="s.setAccent(($event.target as HTMLInputElement).value)"
           />
           <span class="color-value">{{ s.accentColor }}</span>
-          <button class="btn-ghost small" @click="s.setAccent('#88c0d0')">Reset</button>
+          <button class="btn-ghost small" @click="s.setAccent('#58a6ff')">Reset</button>
         </div>
       </section>
 
