@@ -32,11 +32,29 @@ function cleanUploader(uploader?: string): string {
   return uploader.replace(/\s*-\s*Topic$/i, '').trim()
 }
 
+// Noise phrases stripped from YouTube/SoundCloud titles — order matters (most specific first)
+const TITLE_NOISE = [
+  // Bracketed / parenthesised blocks containing noise keywords
+  /\s*[\[(（][^\]）)]*?\b(?:official\s*(?:music\s*)?video|official\s*audio|official\s*lyric\s*video|official\s*visualizer|official\s*clip|official\s*performance|official\s*live)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:music\s*video|lyric\s*video|lyrics?\s*video|animated\s*video|visuali[sz]er|audio\s*only|full\s*video)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:4k|2160p|1440p|1080p|720p|480p|360p|hd|fhd|uhd|hdr|60\s*fps|high\s*quality)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:explicit|clean\s*version|radio\s*edit|single\s*version|album\s*version|deluxe\s*version|extended\s*version|extended\s*mix|original\s*mix|remaster(?:ed)?|re-?master(?:ed)?)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:lyrics?|subtitles?|sub(?:titled)?|cc|auto-?generated|auto\s*generated)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:live|live\s*at|live\s*from|live\s*performance|acoustic|unplugged|session|studio\s*session|live\s*session)\b[^\]）)]*?[\]）)]/gi,
+  /\s*[\[(（][^\]）)]*?\b(?:mv|m\/v|pv|p\/v|ncs\s*release|no\s*copyright|free\s*download)\b[^\]）)]*?[\]）)]/gi,
+  // Bare bracketed blocks with only very short noise content like [HD], [4K], (Official)
+  /\s*[\[(（]\s*(?:hd|4k|uhd|fhd|official|explicit|mv|ncs)\s*[\]）)]/gi,
+  // Trailing unbracketed noise after a pipe or em-dash
+  /\s*[|｜]\s*.{0,80}$/g,
+  // "ft." / "feat." featuring credit — keep it on title but normalise later (don't strip)
+]
+
 function parseArtistTitle(videoTitle: string): { artist: string; title: string } {
-  // Strip common suffixes like "(Official Video)", "[HD]", "(Lyrics)", etc.
-  const cleaned = videoTitle
-    .replace(/\s*[\[(][^\])\[]*(?:official|video|audio|lyrics?|hd|4k|mv|music\s*video|visualizer|explicit)[^\])]*[\])]/gi, '')
-    .trim()
+  let cleaned = videoTitle
+  for (const re of TITLE_NOISE) {
+    cleaned = cleaned.replace(re, '')
+  }
+  cleaned = cleaned.trim()
 
   // Split on " - " or " – " (en-dash) separators
   const sep = /\s+[-–]\s+/
