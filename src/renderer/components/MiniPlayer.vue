@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
 /* ── Scrub bar ──────────────────────────── */
 .scrub-track {
   position: relative;
-  height: 3px;
+  height: 4px;
   background: var(--bg-3);
   cursor: pointer;
   transition: height 0.1s;
@@ -389,14 +389,15 @@ onBeforeUnmount(() => {
 .scrub-track:hover { height: 5px; }
 .scrub-fill {
   position: absolute; top: 0; left: 0; height: 100%;
-  background: var(--accent);
+  background: var(--accent-grad);
   transition: width 0.1s linear;
   pointer-events: none;
 }
 .scrub-thumb {
   position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 9px; height: 9px; border-radius: 50%;
-  background: var(--accent);
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.1s;
@@ -462,13 +463,14 @@ onBeforeUnmount(() => {
 .ctrl-btn:hover { color: var(--tx-dim); background: var(--bg-3); }
 .ctrl-btn.active { color: var(--accent); }
 .play-btn {
-  width: 34px; height: 34px; border: none;
-  background: var(--accent); color: var(--bg-0);
+  width: 40px; height: 40px; border: none;
+  background: var(--accent-grad); color: #fff;
   border-radius: 50%; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.12s;
+  box-shadow: 0 6px 18px -5px rgba(124,92,255,0.7);
+  transition: opacity 0.12s, box-shadow 0.12s;
 }
-.play-btn:hover { opacity: 0.85; }
+.play-btn:hover { opacity: 0.9; box-shadow: 0 8px 22px -5px rgba(124,92,255,0.85); }
 
 /* ── Right ──────────────────────────────── */
 .right-section {

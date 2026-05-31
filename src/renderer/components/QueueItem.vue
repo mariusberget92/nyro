@@ -30,6 +30,17 @@ const thumbnailUrl = computed(() => {
 const title = computed(() => props.item.metadata?.title || props.item.url)
 const artist = computed(() => props.item.metadata?.artist || '')
 
+const sourceLabel = computed(() => {
+  const url = props.item.url
+  if (/youtube\.com|youtu\.be/i.test(url)) return 'YouTube'
+  if (/soundcloud\.com/i.test(url)) return 'SoundCloud'
+  if (/bandcamp\.com/i.test(url)) return 'Bandcamp'
+  if (/spotify\.com/i.test(url)) return 'Spotify'
+  if (/vimeo\.com/i.test(url)) return 'Vimeo'
+  if (props.item.source === 'podcast') return 'Podcast'
+  return null
+})
+
 const duration = computed(() => {
   const d = props.item.metadata?.duration
   if (!d) return ''
@@ -75,7 +86,7 @@ const progressVisible = computed(() =>
 const progressColor = computed(() => {
   if (liveStatus.value === 'converting' || liveStatus.value === 'tagging') return 'var(--conv)'
   if (liveStatus.value === 'completed') return 'var(--ok)'
-  return 'var(--accent)'
+  return 'var(--accent-grad)'
 })
 
 const isRow = computed(() => props.viewMode === 'list' || props.viewMode === 'details')
@@ -120,50 +131,31 @@ const errorDetails = computed(() => {
 
 <template>
   <!-- ── Row layout (List / Details) ── -->
-  <div v-if="isRow" class="row-item" :class="{ 'row-item--selected': selected, 'row-item--details': viewMode === 'details' }" @click.stop="emit('toggleSelect', item.id)">
+  <div v-if="isRow" class="row-item" :class="{ 'row-item--selected': selected }" @click.stop="emit('toggleSelect', item.id)">
     <div class="row-thumb">
       <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" loading="lazy" decoding="async" />
-      <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="thumb-placeholder">
+      <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="thumb-placeholder">
         <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
       </svg>
-      <div v-if="progressVisible" class="row-thumb-progress">
-        <div class="row-thumb-progress-fill" :style="{ width: `${liveProgress}%`, background: progressColor }" />
+    </div>
+    <div class="row-meta">
+      <span class="row-title">{{ title }}</span>
+      <div class="row-sub">
+        <span v-if="sourceLabel" class="row-tag">{{ sourceLabel }}</span>
+        <span v-if="duration" class="row-duration">{{ duration }}</span>
+        <span v-if="artist" class="row-artist">{{ artist }}</span>
+      </div>
+      <div v-if="progressVisible" class="row-prog">
+        <div class="row-prog-fill" :style="{ width: `${liveProgress}%`, background: progressColor }" />
       </div>
     </div>
-    <div class="row-info">
-      <span class="row-title">{{ title }}</span>
-      <span v-if="artist" class="row-artist">{{ artist }}</span>
-    </div>
-    <span v-if="viewMode === 'details'" class="row-col row-duration">{{ duration || '—' }}</span>
-    <span v-if="viewMode === 'details'" class="row-col row-progress-pct">{{ progressVisible ? `${Math.round(liveProgress)}%` : '—' }}</span>
-    <span class="row-col">
+    <div class="row-right">
       <span class="pill" :class="pillColor">{{ pillLabel }}</span>
-    </span>
-    <div class="row-actions">
-      <button v-if="item.status === 'failed'" class="row-btn" title="Retry" @click.stop="queueStore.addUrl(item.url)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a8 8 0 1014.07-8.36L20 4"/>
-        </svg>
-      </button>
-      <button class="row-btn" title="Edit" @click.stop="emit('edit', item)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-      <button
-        class="row-btn heart-btn" :class="{ 'heart-btn--liked': item.liked }"
-        :title="item.liked ? 'Unlike' : 'Like'"
-        @click.stop="queueStore.toggleLike(item.id)"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" :fill="item.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </button>
-      <button class="row-btn row-btn--danger" title="Remove" @click.stop="queueStore.removeItem(item.id)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-        </svg>
+      <span v-if="item.metadata" class="row-kbps">{{ item.downloadMode === 'video' ? item.metadata.duration : '320k' }}</span>
+      <button class="row-action-btn" :title="item.status === 'failed' ? 'Retry' : item.status === 'completed' ? 'Show' : 'Remove'" @click.stop="item.status === 'failed' ? queueStore.addUrl(item.url) : queueStore.removeItem(item.id)">
+        <svg v-if="item.status === 'failed'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a8 8 0 1014.07-8.36L20 4"/></svg>
+        <svg v-else-if="item.status === 'completed'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
   </div>
@@ -510,51 +502,51 @@ const errorDetails = computed(() => {
 
 /* ── Row layout (List / Details) ──────────────────────── */
 .row-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 5px 8px; border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer; transition: background 0.1s, border-color 0.1s;
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; border-radius: 12px;
+  background: var(--bg-1); border: 1px solid var(--line);
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
 }
-.row-item:hover { background: var(--bg-2); }
-.row-item--selected { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.row-item:hover { border-color: var(--line-2); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.row-item--selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
 .row-thumb {
-  position: relative; width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 6px; background: var(--bg-3); overflow: hidden;
+  position: relative; width: 48px; height: 48px; flex-shrink: 0;
+  border-radius: 8px; background: linear-gradient(140deg, var(--bg-3), var(--bg-2)); overflow: hidden;
   display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
 }
 .row-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.row-thumb-progress {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.1);
-}
-.row-thumb-progress-fill { height: 100%; }
 
-.row-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .row-title {
-  font-size: 12.5px; font-weight: 600; color: var(--tx);
+  font-size: 13.5px; font-weight: 600; color: var(--tx);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.row-artist {
-  font-size: 11px; color: var(--tx-faint);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.row-sub {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--tx-faint);
 }
+.row-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  padding: 2px 7px; border-radius: 6px;
+  background: var(--bg-2); color: var(--tx-dim);
+}
+.row-duration { font-size: 11.5px; color: var(--tx-faint); }
+.row-artist { font-size: 11.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-prog { height: 5px; border-radius: 3px; background: var(--bg-3); overflow: hidden; margin-top: 2px; }
+.row-prog-fill { height: 100%; border-radius: 3px; transition: width 0.2s linear; }
 
-.row-col { flex-shrink: 0; font-size: 11px; color: var(--tx-faint); }
-.row-duration, .row-progress-pct {
-  width: 52px; text-align: right;
-  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+.row-right {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
 }
-
-.row-actions {
-  display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s;
+.row-kbps {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-2);
 }
-.row-item:hover .row-actions { opacity: 1; }
-.row-btn {
-  width: 26px; height: 26px; border-radius: 6px; border: none;
-  background: transparent; color: var(--tx-faint); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.1s, color 0.1s;
+.row-action-btn {
+  width: 30px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--bg-2); color: var(--tx-dim);
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-.row-btn:hover { background: var(--bg-3); color: var(--tx); }
-.row-btn--danger:hover { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.row-action-btn:hover { background: var(--bg-3); color: var(--tx); }
 </style>

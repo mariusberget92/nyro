@@ -156,14 +156,14 @@ function handleSave(_id: string, _artist: string, _title: string) {
   flex-shrink: 0;
 }
 .toolbar-title {
-  font-size: 15px; font-weight: 800; color: var(--tx); margin: 0;
-  letter-spacing: 0.01em;
+  font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--tx); margin: 0;
+  letter-spacing: -0.3px;
 }
 .pending-count {
   font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
   color: var(--tx-faint);
   background: var(--bg-2);
-  padding: 2px 7px; border-radius: 20px;
+  padding: 3px 8px; border-radius: 20px;
 }
 .spacer { flex: 1; }
 .toolbar-actions { display: flex; align-items: center; gap: 3px; }
