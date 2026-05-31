@@ -125,6 +125,16 @@ export const usePlayerStore = defineStore('player', {
     consumeSeek(): number | null { const s = this.pendingSeek; this.pendingSeek = null; return s },
     setDuration(d: number) { this.duration = d },
     setVolume(v: number)   { this.volume = Math.max(0, Math.min(1, v)) },
+    seekBy(seconds: number) {
+      if (!this.duration) return
+      const current = this.progress * this.duration
+      const next = Math.max(0, Math.min(this.duration, current + seconds))
+      this.pendingSeek = next
+      this.progress = next / this.duration
+    },
+    toggleMute() {
+      this.volume = this.volume > 0 ? 0 : 0.7
+    },
 
     setSleepTimer(minutes: number) {
       this.sleepEndsAt = minutes > 0 ? Date.now() + minutes * 60 * 1000 : null

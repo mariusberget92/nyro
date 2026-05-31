@@ -2,6 +2,7 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import AudioProcessor from './AudioProcessor.vue'
+import Visualizer from './Visualizer.vue'
 import { connectAudioElement, resumeContext } from '../composables/audioEngine'
 
 const player = usePlayerStore()
@@ -143,6 +144,9 @@ onBeforeUnmount(() => {
         <div v-else class="lyrics-empty">No lyrics available for this track.</div>
       </div>
     </Transition>
+
+    <!-- Spectrum visualizer -->
+    <Visualizer :playing="player.playing" />
 
     <!-- Scrub bar -->
     <div class="scrub-track" @click="scrub">

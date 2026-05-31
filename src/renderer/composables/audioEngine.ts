@@ -110,6 +110,11 @@ let mbBandNodes: Array<{ hpf: BiquadFilterNode | null; lpf: BiquadFilterNode | n
 let mbMerge:     GainNode | null = null
 let mbBypass:    GainNode | null = null
 
+// Spectrum analyser (exposed for the visualizer)
+let analyserNode: AnalyserNode | null = null
+
+export function getAnalyser(): AnalyserNode | null { return analyserNode }
+
 // Reactive settings (the UI binds to these)
 export const eqSettings = reactive<EqSettings>(loadEq())
 export const mbSettings = reactive<MbSettings>(loadMb())
@@ -194,8 +199,15 @@ function buildGraph(audioEl: HTMLAudioElement) {
     return { hpf, lpf, comp, makeup }
   })
 
+  analyserNode = c.createAnalyser()
+  analyserNode.fftSize = 128
+  analyserNode.smoothingTimeConstant = 0.75
+  analyserNode.minDecibels = -90
+  analyserNode.maxDecibels = -10
+
   mbMerge.connect(mbBypass)
-  mbBypass.connect(c.destination)
+  mbBypass.connect(analyserNode)
+  analyserNode.connect(c.destination)
 
   applyEqEnabled()
   applyMbEnabled()
