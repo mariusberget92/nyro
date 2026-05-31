@@ -147,6 +147,9 @@ function createWindow(): void {
           done: true,
           ytdlpUpdated: result.ytdlpUpdated,
           ffmpegMissing: !result.ffmpeg.found,
+          ytdlpFound: result.ytdlp.found,
+          ytdlpVersion: result.ytdlp.current ?? null,
+          ffmpegVersion: result.ffmpeg.current ?? null,
         })
       }).catch(() => {
         mainWindow?.webContents.send(IPC_CHANNELS.UPDATER_STATUS, {

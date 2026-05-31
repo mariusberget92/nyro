@@ -8,6 +8,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useToastStore } from './stores/toastStore'
 import { useLibraryStore } from './stores/libraryStore'
 import { usePlayerStore } from './stores/playerStore'
+import { useBinaryStore } from './stores/binaryStore'
 import { useIpc } from './composables/useIpc'
 
 const queueStore = useQueueStore()
@@ -15,6 +16,7 @@ const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 const libraryStore = useLibraryStore()
 const player = usePlayerStore()
+const binaryStore = useBinaryStore()
 
 function onKeyDown(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement)?.tagName?.toLowerCase() ?? ''
@@ -97,12 +99,16 @@ useIpc('media:stop',      () => { player.playing = false })
 
 useIpc('updater:status', (payload: any) => {
   if (!payload.done) return
+  binaryStore.setStatus({
+    ytdlpFound: payload.ytdlpFound ?? !payload.message?.includes('not found'),
+    ffmpegMissing: payload.ffmpegMissing ?? false,
+    ytdlpVersion: payload.ytdlpVersion ?? null,
+    ffmpegVersion: payload.ffmpegVersion ?? null,
+  })
   if (payload.ytdlpUpdated) {
     toastStore.add(payload.message, 'success', 6000)
   } else if (payload.ffmpegMissing) {
     toastStore.add('FFmpeg not found in resources — audio conversion will fail', 'error', 8000)
-  } else {
-    toastStore.add(payload.message, 'info', 5000)
   }
 })
 </script>

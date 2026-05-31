@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQueueStore } from '../stores/queueStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useBinaryStore } from '../stores/binaryStore'
 
 const router = useRouter()
 const route = useRoute()
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
+const binary = useBinaryStore()
 
 const activeCount = computed(() => queueStore.activeItems.length)
 const qualityLabel = computed(() => {
@@ -98,6 +100,35 @@ const isSettings   = computed(() => route.path === '/settings')
 
     <!-- Bottom: settings -->
     <div class="rail-bottom">
+
+      <!-- Binary status pills -->
+      <div class="binary-pills">
+        <template v-if="binary.checking">
+          <div class="bin-pill bin-pill--checking" title="Checking binaries…">
+            <span class="bin-dot bin-dot--spin" />
+            <span class="bin-label">Checking…</span>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            class="bin-pill"
+            :class="binary.ytdlpOk ? 'bin-pill--ok' : 'bin-pill--err'"
+            :title="binary.ytdlpOk ? ('yt-dlp ' + (binary.ytdlpVersion ?? '')).trim() : 'yt-dlp not found — downloads will fail'"
+          >
+            <span class="bin-dot" />
+            <span class="bin-label">yt-dlp</span>
+          </div>
+          <div
+            class="bin-pill"
+            :class="binary.ffmpegOk ? 'bin-pill--ok' : 'bin-pill--err'"
+            :title="binary.ffmpegOk ? ('FFmpeg ' + (binary.ffmpegVersion ?? '')).trim() : 'FFmpeg not found — audio conversion will fail'"
+          >
+            <span class="bin-dot" />
+            <span class="bin-label">FFmpeg</span>
+          </div>
+        </template>
+      </div>
+
       <button class="nav-btn" :class="{ active: isSettings }" title="Settings" @click="router.push('/settings')">
         <div class="nav-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -232,4 +263,40 @@ const isSettings   = computed(() => route.path === '/settings')
   width: 100%;
   padding: 0 8px;
 }
+
+/* ── Binary status pills ─────────────────────────── */
+.binary-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0 2px;
+}
+.bin-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.03em;
+  cursor: default;
+  transition: opacity 0.15s;
+  width: 100%;
+}
+.bin-pill--ok  { background: color-mix(in srgb, #a3be8c 15%, transparent); color: #a3be8c; }
+.bin-pill--err { background: color-mix(in srgb, #bf616a 15%, transparent); color: #bf616a; }
+.bin-pill--checking { background: var(--bg-2); color: var(--tx-faint); }
+.bin-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.bin-pill--ok  .bin-dot { background: #a3be8c; box-shadow: 0 0 4px #a3be8c; }
+.bin-pill--err .bin-dot { background: #bf616a; box-shadow: 0 0 4px #bf616a; }
+.bin-pill--checking .bin-dot { background: var(--tx-faint); }
+.bin-dot--spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bin-label { flex: 1; }
+.bin-version { opacity: 0.6; font-size: 8px; }
 </style>
