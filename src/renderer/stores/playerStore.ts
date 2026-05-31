@@ -8,16 +8,17 @@ export const usePlayerStore = defineStore('player', {
     queue: [] as LibraryTrack[],
     currentIndex: -1,
     playing: false,
-    progress: 0,       // 0–1
-    duration: 0,       // seconds
+    progress: 0,
+    duration: 0,
     volume: 1,
+    speed: 1,           // playback rate: 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2
     shuffle: false,
     repeat: 'off' as RepeatMode,
     shuffleOrder: [] as number[],
     lrcRaw: null as string | null,
     showLyrics: false,
-    pendingSeek: null as number | null,  // seconds; consumed by MiniPlayer
-    sleepEndsAt: null as number | null,  // epoch ms; null = timer off
+    pendingSeek: null as number | null,
+    sleepEndsAt: null as number | null,
   }),
 
   getters: {
@@ -121,6 +122,7 @@ export const usePlayerStore = defineStore('player', {
       }
     },
 
+    setSpeed(rate: number) { this.speed = rate },
     setProgress(p: number) { this.progress = Math.max(0, Math.min(1, p)) },
     consumeSeek(): number | null { const s = this.pendingSeek; this.pendingSeek = null; return s },
     setDuration(d: number) { this.duration = d },

@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
+import { useHistoryStore } from '../stores/historyStore'
 import AudioProcessor from './AudioProcessor.vue'
 import Visualizer from './Visualizer.vue'
 import { connectAudioElement, resumeContext } from '../composables/audioEngine'
 
 const player = usePlayerStore()
+const history = useHistoryStore()
 const audio = ref<HTMLAudioElement | null>(null)
 const showSleepPicker = ref(false)
 const showEq = ref(false)
+const showSpeedPicker = ref(false)
 let audioConnected = false
 const sleepCustomMin = ref(30)
+
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+const speedLabel = computed(() => player.speed === 1 ? '1×' : `${player.speed}×`)
 
 // Sleep timer display — remaining time as "Xh Ym" or "Xm"
 const sleepRemaining = computed(() => {
@@ -65,6 +71,12 @@ watch(() => player.volume, (v) => {
   if (audio.value) audio.value.volume = v
 })
 
+watch(() => player.speed, (rate) => {
+  if (!audio.value) return
+  audio.value.playbackRate = rate
+  audio.value.preservesPitch = true
+})
+
 // Explicit seek requests from store actions (prev restart, etc.)
 watch(() => player.pendingSeek, (t) => {
   if (t === null || !audio.value) return
@@ -80,6 +92,8 @@ function onTimeUpdate() {
 function onLoadedMetadata() {
   if (!audio.value) return
   player.setDuration(audio.value.duration)
+  audio.value.playbackRate = player.speed
+  audio.value.preservesPitch = true
   if (player.playing) audio.value.play().catch(() => {})
 }
 
@@ -107,6 +121,24 @@ watch(() => player.playing, (playing) => {
   }
   if (playing) resumeContext()
 }, { flush: 'post' })
+
+// System notification + play history on track change
+let lastNotifiedPath = ''
+watch(() => player.currentTrack, (track) => {
+  if (!track || track.path === lastNotifiedPath) return
+  lastNotifiedPath = track.path
+  history.record(track)
+  if (Notification.permission === 'granted') {
+    const n = new Notification(track.title || 'Now Playing', {
+      body: track.artist || track.album || '',
+      icon: track.coverPath ? `nyro-file://local?p=${encodeURIComponent(track.coverPath)}` : undefined,
+      silent: true,
+    })
+    setTimeout(() => n.close(), 4000)
+  } else if (Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
+})
 
 onBeforeUnmount(() => {
   audio.value?.pause()
@@ -258,6 +290,29 @@ onBeforeUnmount(() => {
           <span class="time-label">
             {{ timeStr(player.progress * player.duration) }} / {{ timeStr(player.duration) }}
           </span>
+
+          <!-- Speed picker -->
+          <div class="speed-wrap">
+            <button
+              class="ctrl-btn speed-btn"
+              :class="{ active: player.speed !== 1 }"
+              :title="`Playback speed: ${speedLabel}`"
+              @click.stop="showSpeedPicker = !showSpeedPicker"
+            >{{ speedLabel }}</button>
+            <Transition name="pop">
+              <div v-if="showSpeedPicker" class="speed-popover" @click.stop>
+                <div class="speed-popover-title">Playback speed</div>
+                <div class="speed-options">
+                  <button
+                    v-for="s in SPEEDS" :key="s"
+                    class="speed-opt"
+                    :class="{ active: player.speed === s }"
+                    @click="player.setSpeed(s); showSpeedPicker = false"
+                  >{{ s === 1 ? '1× Normal' : `${s}×` }}</button>
+                </div>
+              </div>
+            </Transition>
+          </div>
 
           <!-- Sleep timer button -->
           <div class="sleep-wrap">
@@ -421,6 +476,39 @@ onBeforeUnmount(() => {
 .volume-row {
   display: flex; align-items: center; gap: 5px; color: var(--tx-faint);
 }
+
+/* ── Speed picker ─────────────────────── */
+.speed-wrap { position: relative; }
+.speed-btn {
+  width: auto; padding: 0 7px;
+  font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700;
+}
+.speed-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 150px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 200;
+}
+.speed-popover-title {
+  font-size: 10px; font-weight: 700; color: var(--tx-dim);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.speed-options { display: flex; flex-direction: column; gap: 3px; }
+.speed-opt {
+  padding: 5px 8px; border-radius: 7px; border: 1px solid transparent;
+  background: transparent; color: var(--tx-dim); font-size: 12px;
+  font-weight: 500; cursor: pointer; text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+.speed-opt:hover { background: var(--bg-3); color: var(--tx); }
+.speed-opt.active { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 /* ── Sleep timer ──────────────────────── */
 .sleep-wrap { position: relative; }

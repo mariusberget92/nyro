@@ -20,6 +20,7 @@ const isDashboard  = computed(() => route.path === '/dashboard')
 const isPodcasts   = computed(() => route.path === '/podcasts')
 const isLibrary    = computed(() => route.path === '/library')
 const isPlaylists  = computed(() => route.path === '/playlists')
+const isHistory    = computed(() => route.path === '/history')
 const isSettings   = computed(() => route.path === '/settings')
 </script>
 
@@ -77,6 +78,16 @@ const isSettings   = computed(() => route.path === '/settings')
             <circle cx="3" cy="6"  r="1" fill="currentColor"/>
             <circle cx="3" cy="12" r="1" fill="currentColor"/>
             <circle cx="3" cy="18" r="1" fill="currentColor"/>
+          </svg>
+        </div>
+      </button>
+
+      <button class="nav-btn" :class="{ active: isHistory }" title="Play History" @click="router.push('/history')">
+        <div class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="12 8 12 12 14 14"/>
+            <path d="M3.05 11a9 9 0 1 0 .5-4.5"/>
+            <polyline points="3 3 3 9 9 9"/>
           </svg>
         </div>
       </button>

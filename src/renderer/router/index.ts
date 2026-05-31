@@ -4,6 +4,7 @@ import Settings from '../pages/Settings.vue'
 import Podcasts from '../pages/Podcasts.vue'
 import Library from '../pages/Library.vue'
 import Playlists from '../pages/Playlists.vue'
+import History from '../pages/History.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -14,5 +15,6 @@ export default createRouter({
     { path: '/podcasts', component: Podcasts },
     { path: '/library', component: Library },
     { path: '/playlists', component: Playlists },
+    { path: '/history', component: History },
   ]
 })
