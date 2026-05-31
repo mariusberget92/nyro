@@ -7,12 +7,14 @@ import { useQueueStore } from './stores/queueStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useToastStore } from './stores/toastStore'
 import { useLibraryStore } from './stores/libraryStore'
+import { usePlayerStore } from './stores/playerStore'
 import { useIpc } from './composables/useIpc'
 
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 const libraryStore = useLibraryStore()
+const player = usePlayerStore()
 
 onMounted(async () => {
   await queueStore.loadQueue()
@@ -32,6 +34,12 @@ useIpc('queue:completed', (payload: any) => {
 useIpc('queue:error', (payload: any) => {
   queueStore.markFailed(payload.id, payload.error)
 })
+// Global media keys forwarded from main process
+useIpc('media:playpause', () => player.togglePlay())
+useIpc('media:next',      () => player.next())
+useIpc('media:prev',      () => player.prev())
+useIpc('media:stop',      () => { player.playing = false })
+
 useIpc('updater:status', (payload: any) => {
   if (!payload.done) return
   if (payload.ytdlpUpdated) {
