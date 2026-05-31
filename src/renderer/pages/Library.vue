@@ -133,6 +133,48 @@ function revealFile(path: string) {
   window.nyro.invoke('shell:show-in-folder', path)
 }
 
+// ── Create folder ─────────────────────────────────────────
+const showNewFolder = ref(false)
+const newFolderName = ref('')
+const newFolderError = ref('')
+const newFolderInputEl = ref<HTMLInputElement | null>(null)
+
+function openNewFolder() {
+  newFolderName.value = ''
+  newFolderError.value = ''
+  showNewFolder.value = true
+  nextTick(() => newFolderInputEl.value?.focus())
+}
+
+async function commitNewFolder() {
+  const name = newFolderName.value.trim()
+  if (!name) return
+  try {
+    const subfolder = view.value === 'podcasts' ? 'podcasts' : view.value === 'videos' ? 'video' : 'music'
+    await window.nyro.invoke('library:create-folder', name, subfolder)
+    showNewFolder.value = false
+  } catch (err: any) {
+    newFolderError.value = err.message || 'Failed to create folder'
+  }
+}
+
+// ── Link track to folder ──────────────────────────────────
+const linkingTrack = ref<LibraryTrack | null>(null)
+const linkError = ref('')
+
+async function linkTrackToFolder(track: LibraryTrack) {
+  linkError.value = ''
+  const targetFolder = await window.nyro.invoke<string | null>('dialog:select-folder')
+  if (!targetFolder) return
+  try {
+    await window.nyro.invoke('library:link-track', track.path, targetFolder)
+    await lib.scan()
+  } catch (err: any) {
+    linkError.value = err.message || 'Link failed'
+    setTimeout(() => { linkError.value = '' }, 3000)
+  }
+}
+
 // ── Cover upload ──────────────────────────────────────────
 async function pickCoverForAlbum(album: LibraryAlbum, e: Event) {
   e.stopPropagation()
@@ -187,6 +229,15 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
           <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
         </svg>
         Select
+      </button>
+
+      <!-- New Folder button -->
+      <button v-if="view !== 'artists'" class="new-folder-btn" title="Create new folder" @click="openNewFolder()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+        New Folder
       </button>
 
       <!-- Scan button -->
@@ -417,6 +468,12 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
             </div>
             <span class="tr-album">{{ track.album }}</span>
             <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+            <button class="reveal-btn" title="Link to folder…" @click.stop="linkTrackToFolder(track)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+              </svg>
+            </button>
             <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
@@ -491,6 +548,12 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
                   <span class="tr-path" :title="track.path">{{ track.path }}</span>
                 </div>
                 <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                <button class="reveal-btn" title="Link to folder…" @click.stop="linkTrackToFolder(track)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                  </svg>
+                </button>
                 <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
@@ -798,12 +861,12 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .tr-title { font-size: 12.5px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-artist { font-size: 10.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-path {
-  font-size: 9.5px; color: var(--tx-faint); opacity: 0;
+  font-size: 10px; color: var(--tx-dim); opacity: 0;
   font-family: 'JetBrains Mono', monospace;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: opacity 0.12s; max-width: 100%;
 }
-.track-row:hover .tr-path { opacity: 0.6; }
+.track-row:hover .tr-path { opacity: 0.75; }
 .reveal-btn {
   flex-shrink: 0; width: 24px; height: 24px;
   background: none; border: 1px solid var(--line-2);

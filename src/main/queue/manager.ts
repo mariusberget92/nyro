@@ -512,28 +512,26 @@ class QueueManager {
       }
 
       // Step 4: Move to output folder
-      // effectiveAlbum mirrors the fallback logic used at queue-add time
-      const effectiveAlbum = meta?.album
-        || item.playlistTitle
-        || (meta ? cleanUploader((meta as any).uploader) : '')
-        || ''
-
-      const baseFolder = settings.outputFolder
+      const baseFolder = item.outputFolder || settings.outputFolder
       let targetFolder = baseFolder
 
-      if (meta?.album) {
-        // Explicit album tag → Albums/Album Title (Year)/
-        const safeAlbum = sanitizeFilenameComponent(meta.album)
-        const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
+      const effectiveAlbum = item.albumOverride || meta?.album
+      if (effectiveAlbum) {
+        // Named album → Albums/Album Title (Year)/
+        const safeAlbum = sanitizeFilenameComponent(effectiveAlbum)
+        const folderName = meta?.year ? `${safeAlbum} (${meta.year})` : safeAlbum
         targetFolder = join(baseFolder, 'Albums', folderName)
       } else if (item.playlistTitle) {
         // Playlist → Playlists/Playlist Name/
         const safeName = sanitizeFilenameComponent(item.playlistTitle)
         targetFolder = join(baseFolder, 'Playlists', safeName)
-      } else if (effectiveAlbum) {
+      } else {
         // Channel/uploader fallback → Artists/Channel Name/
-        const safeName = sanitizeFilenameComponent(effectiveAlbum)
-        targetFolder = join(baseFolder, 'Artists', safeName)
+        const uploaderName = meta ? cleanUploader((meta as any).uploader) : ''
+        if (uploaderName) {
+          const safeName = sanitizeFilenameComponent(uploaderName)
+          targetFolder = join(baseFolder, 'Artists', safeName)
+        }
       }
 
       if (!existsSync(targetFolder)) {

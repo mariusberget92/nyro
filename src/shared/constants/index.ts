@@ -30,6 +30,8 @@ export const IPC_CHANNELS = {
   LIBRARY_SET_COVER:     'library:set-cover',
   SHELL_SHOW_IN_FOLDER:  'shell:show-in-folder',
   LIBRARY_DELETE_TRACKS: 'library:delete-tracks',
+  LIBRARY_CREATE_FOLDER: 'library:create-folder',
+  LIBRARY_LINK_TRACK:    'library:link-track',
   // Main → Renderer
   QUEUE_PROGRESS: 'queue:progress',
   QUEUE_STATUS_CHANGED: 'queue:status-changed',

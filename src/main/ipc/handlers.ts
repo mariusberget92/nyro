@@ -209,4 +209,29 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.SHELL_SHOW_IN_FOLDER, (_event, filePath: string) => {
     shell.showItemInFolder(filePath)
   })
+
+  // library:create-folder — create a new empty subdirectory inside the output folder
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_CREATE_FOLDER, (_event, folderName: string, subfolder?: string) => {
+    const settings = loadSettings()
+    if (!settings.outputFolder) throw new Error('No output folder set.')
+    const base = subfolder ? join(settings.outputFolder, subfolder) : settings.outputFolder
+    const target = join(base, folderName)
+    if (existsSync(target)) throw new Error('A folder with that name already exists.')
+    mkdirSync(target, { recursive: true })
+    return target
+  })
+
+  // library:link-track — create a symlink (or copy on Windows) of a track into a target folder
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_LINK_TRACK, async (_event, trackPath: string, targetFolder: string) => {
+    const { basename } = await import('path')
+    const { symlinkSync, copyFileSync: cp } = await import('fs')
+    const destPath = join(targetFolder, basename(trackPath))
+    if (existsSync(destPath)) throw new Error('A file with that name already exists in the target folder.')
+    if (process.platform === 'win32') {
+      cp(trackPath, destPath)
+    } else {
+      symlinkSync(trackPath, destPath)
+    }
+    return destPath
+  })
 }
