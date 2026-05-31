@@ -3,6 +3,14 @@ import { ref, computed } from 'vue'
 import { useSettingsStore } from '../stores/settingsStore'
 const s = useSettingsStore()
 
+// Notification permission state
+const notifPermission = ref(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+
+async function requestNotifPermission() {
+  const result = await Notification.requestPermission()
+  notifPermission.value = result
+}
+
 const taddyUserId = ref(s.settings.taddyUserId || '')
 const taddyApiKey = ref(s.settings.taddyApiKey || '')
 const taddySaving = ref(false)
@@ -59,6 +67,60 @@ async function saveApiKey() {
           </button>
         </div>
         <span class="section-desc">Get your credentials at <a href="https://taddy.org/signup/developers" target="_blank" class="link">taddy.org/signup/developers</a> · 300 requests/month on the free tier</span>
+      </section>
+
+      <!-- Notifications -->
+      <section class="section">
+        <label class="section-label">
+          NOTIFICATIONS
+          <span v-if="notifPermission === 'granted'" class="key-set-badge">✓ ALLOWED</span>
+          <span v-else-if="notifPermission === 'denied'" class="denied-badge">✗ BLOCKED</span>
+        </label>
+
+        <div v-if="notifPermission !== 'granted'" class="notif-permission-box">
+          <span class="section-desc">
+            <span v-if="notifPermission === 'denied'">Notifications are blocked. Enable them in your OS system settings for this app.</span>
+            <span v-else>Grant permission to receive notifications from Nyro.</span>
+          </span>
+          <button v-if="notifPermission === 'default'" class="btn-ghost" @click="requestNotifPermission">Allow notifications</button>
+        </div>
+
+        <div class="row-between">
+          <span class="section-desc">Notify when track changes</span>
+          <button
+            class="toggle-btn"
+            :class="{ active: s.settings.notifyOnTrackChange }"
+            :disabled="notifPermission !== 'granted'"
+            @click="s.update({ notifyOnTrackChange: !s.settings.notifyOnTrackChange })"
+          >
+            <span class="toggle-knob" />
+          </button>
+        </div>
+
+        <div class="row-between">
+          <span class="section-desc">Notify when download completes</span>
+          <button
+            class="toggle-btn"
+            :class="{ active: s.settings.notifyOnDownloadComplete }"
+            :disabled="notifPermission !== 'granted'"
+            @click="s.update({ notifyOnDownloadComplete: !s.settings.notifyOnDownloadComplete })"
+          >
+            <span class="toggle-knob" />
+          </button>
+        </div>
+
+        <div v-if="s.settings.notifyOnTrackChange || s.settings.notifyOnDownloadComplete">
+          <label class="section-label" style="margin-bottom:4px">AUTO-DISMISS AFTER</label>
+          <div class="toggle-group flex-wrap">
+            <button
+              v-for="opt in [{ label: '2s', ms: 2000 }, { label: '4s', ms: 4000 }, { label: '8s', ms: 8000 }, { label: 'Never', ms: 0 }]"
+              :key="opt.ms"
+              :class="['density-btn', { active: s.settings.notificationDuration === opt.ms }]"
+              :disabled="notifPermission !== 'granted'"
+              @click="s.update({ notificationDuration: opt.ms })"
+            >{{ opt.label }}</button>
+          </div>
+        </div>
       </section>
 
       <!-- Cookie authentication -->
@@ -289,6 +351,17 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(-
   border-radius: 8px; border: 1px solid var(--line-2); outline: none;
 }
 .api-key-input:focus { border-color: var(--accent); }
+.denied-badge {
+  display: inline-block; margin-left: 8px;
+  padding: 1px 6px; border-radius: 4px;
+  background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
+}
+.notif-permission-box {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; background: var(--bg-2);
+  border: 1px solid var(--line-2); border-radius: 8px;
+}
 .key-set-badge {
   display: inline-block; margin-left: 8px;
   padding: 1px 6px; border-radius: 4px;

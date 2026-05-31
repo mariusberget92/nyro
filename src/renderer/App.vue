@@ -76,6 +76,15 @@ useIpc('queue:status-changed', (payload: any) => {
 })
 useIpc('queue:completed', (payload: any) => {
   queueStore.markCompleted(payload.id, payload.outputPath)
+  if (settingsStore.settings.notifyOnDownloadComplete && Notification.permission === 'granted') {
+    const item = queueStore.items.find(i => i.id === payload.id)
+    const n = new Notification('Download complete', {
+      body: item?.title || item?.url || 'Track ready',
+      silent: true,
+    })
+    const dur = settingsStore.settings.notificationDuration
+    if (dur > 0) setTimeout(() => n.close(), dur)
+  }
 })
 useIpc('queue:error', (payload: any) => {
   queueStore.markFailed(payload.id, payload.error)

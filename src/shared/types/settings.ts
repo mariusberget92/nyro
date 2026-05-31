@@ -16,6 +16,9 @@ export interface AppSettings {
   videoQuality: '4K' | '1080p' | '720p' | '480p'
   cookiesBrowser: '' | 'chrome' | 'firefox' | 'edge' | 'brave' | 'opera' | 'vivaldi' | 'safari'
   cookiesFile: string   // path to a cookies.txt (Netscape format); takes priority over cookiesBrowser
+  notifyOnTrackChange: boolean
+  notifyOnDownloadComplete: boolean
+  notificationDuration: number  // milliseconds; 0 = persistent until dismissed
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,4 +37,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   videoQuality: '1080p',
   cookiesBrowser: '',
   cookiesFile: '',
+  notifyOnTrackChange: true,
+  notifyOnDownloadComplete: true,
+  notificationDuration: 4000,
 }

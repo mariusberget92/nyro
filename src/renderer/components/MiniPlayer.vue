@@ -2,12 +2,14 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
 import { useHistoryStore } from '../stores/historyStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import AudioProcessor from './AudioProcessor.vue'
 import Visualizer from './Visualizer.vue'
 import { connectAudioElement, resumeContext } from '../composables/audioEngine'
 
 const player = usePlayerStore()
 const history = useHistoryStore()
+const settings = useSettingsStore()
 const audio = ref<HTMLAudioElement | null>(null)
 const showSleepPicker = ref(false)
 const showEq = ref(false)
@@ -128,15 +130,18 @@ watch(() => player.currentTrack, (track) => {
   if (!track || track.path === lastNotifiedPath) return
   lastNotifiedPath = track.path
   history.record(track)
-  if (Notification.permission === 'granted') {
-    const n = new Notification(track.title || 'Now Playing', {
-      body: track.artist || track.album || '',
-      icon: track.coverPath ? `nyro-file://local?p=${encodeURIComponent(track.coverPath)}` : undefined,
-      silent: true,
-    })
-    setTimeout(() => n.close(), 4000)
-  } else if (Notification.permission === 'default') {
-    Notification.requestPermission()
+  if (settings.settings.notifyOnTrackChange) {
+    if (Notification.permission === 'granted') {
+      const n = new Notification(track.title || 'Now Playing', {
+        body: track.artist || track.album || '',
+        icon: track.coverPath ? `nyro-file://local?p=${encodeURIComponent(track.coverPath)}` : undefined,
+        silent: true,
+      })
+      const dur = settings.settings.notificationDuration
+      if (dur > 0) setTimeout(() => n.close(), dur)
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
   }
 })
 
