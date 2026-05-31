@@ -124,6 +124,31 @@ const detailArtist = computed((): LibraryArtist | null => {
   if (!selected.value || view.value !== 'artists') return null
   return selected.value as LibraryArtist
 })
+
+// ── Cover upload ──────────────────────────────────────────
+async function pickCoverForAlbum(album: LibraryAlbum, e: Event) {
+  e.stopPropagation()
+  const imagePath = await window.nyro.invoke<string | null>('dialog:select-file', {
+    title: 'Select Cover Image',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+  })
+  if (!imagePath) return
+  for (const track of album.tracks) {
+    await lib.setCover(track.path, imagePath)
+  }
+  // Force cover path update on the album object for reactivity
+  album.coverPath = album.tracks.find(t => t.coverPath)?.coverPath
+}
+
+async function pickCoverForTrack(track: LibraryTrack, e: Event) {
+  e.stopPropagation()
+  const imagePath = await window.nyro.invoke<string | null>('dialog:select-file', {
+    title: 'Select Cover Image',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+  })
+  if (!imagePath) return
+  await lib.setCover(track.path, imagePath)
+}
 </script>
 
 <template>
@@ -189,6 +214,11 @@ const detailArtist = computed((): LibraryArtist | null => {
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Change cover" @click.stop="pickCoverForAlbum(album, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
             </div>
             <div class="card-label-row">
               <template v-if="renaming === album">
@@ -253,6 +283,11 @@ const detailArtist = computed((): LibraryArtist | null => {
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Change cover" @click.stop="pickCoverForAlbum(show, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
             </div>
             <div class="card-label-row">
               <template v-if="renaming === show">
@@ -318,6 +353,12 @@ const detailArtist = computed((): LibraryArtist | null => {
                 <svg v-if="!detailAlbum.coverPath" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                   <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
                 </svg>
+                <div class="detail-art-overlay" @click.stop="pickCoverForAlbum(detailAlbum, $event)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span>Change cover</span>
+                </div>
               </div>
               <div class="detail-meta">
                 <span class="detail-label">{{ view === 'podcasts' ? 'PODCAST' : 'ALBUM' }}</span>
@@ -509,6 +550,18 @@ const detailArtist = computed((): LibraryArtist | null => {
   color: #fff;
 }
 .card-art:hover .card-play-overlay { opacity: 1; }
+
+/* ── Cover upload button (card) ────────────────── */
+.cover-upload-btn {
+  position: absolute; bottom: 6px; right: 6px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+  z-index: 2;
+}
+.card-art:hover .cover-upload-btn { opacity: 1; }
+.cover-upload-btn:hover { background: rgba(136,192,208,0.4); }
 .card-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub  { display: block; font-size: 11px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -563,7 +616,15 @@ const detailArtist = computed((): LibraryArtist | null => {
   border-radius: 10px; background: var(--bg-3) center/cover no-repeat;
   display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  position: relative; overflow: hidden; cursor: pointer;
 }
+.detail-art-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  background: rgba(0,0,0,0.55); opacity: 0; transition: opacity 0.15s;
+  color: #fff; font-size: 10px; font-weight: 600;
+}
+.detail-art:hover .detail-art-overlay { opacity: 1; }
 .artist-shape { border-radius: 50%; }
 .detail-meta { display: flex; flex-direction: column; gap: 4px; }
 .detail-label { font-size: 9.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }

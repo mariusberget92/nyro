@@ -5,7 +5,9 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
-import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, copyFileSync, mkdirSync } from 'fs'
+import { createHash } from 'crypto'
+import NodeID3 from 'node-id3'
 
 let libraryCache: ReturnType<typeof scanLibrary> | null = null
 
@@ -142,6 +144,35 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   // library:get-lrc — read a .lrc sidecar file and return its content
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET_LRC, (_event, lrcPath: string) => {
     try { return readFileSync(lrcPath, 'utf8') } catch { return null }
+  })
+
+  // library:set-cover — copy image file to covers cache, embed in ID3, patch cache
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_SET_COVER, async (_event, trackPath: string, imagePath: string) => {
+    const cacheDir = join(app.getPath('userData'), 'covers')
+    mkdirSync(cacheDir, { recursive: true })
+    const id = createHash('md5').update(trackPath).digest('hex')
+    const destPath = join(cacheDir, `${id}.jpg`)
+    copyFileSync(imagePath, destPath)
+
+    // Embed image in ID3 tag (audio files only)
+    const ext = trackPath.split('.').pop()?.toLowerCase() ?? ''
+    if (['mp3', 'm4a', 'flac', 'ogg', 'wav', 'aac'].includes(ext)) {
+      try {
+        const imgBuffer = readFileSync(imagePath)
+        const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
+        NodeID3.update({
+          image: { mime, type: { id: 3, name: 'front cover' }, description: 'Cover', imageBuffer: imgBuffer }
+        }, trackPath)
+      } catch {}
+    }
+
+    // Patch in-memory library cache
+    if (libraryCache) {
+      const track = libraryCache.tracks.find(t => t.path === trackPath)
+      if (track) track.coverPath = destPath
+      saveLibraryCache(libraryCache)
+    }
+    return destPath
   })
 
   // library:rename-folder — rename an album or podcast folder on disk

@@ -84,6 +84,12 @@ export const useLibraryStore = defineStore('library', {
         this.scannedAt = result.scannedAt
       }
     },
+    async setCover(trackPath: string, imagePath: string): Promise<string> {
+      const coverPath = await window.nyro.invoke<string>('library:set-cover', trackPath, imagePath)
+      const track = this.tracks.find(t => t.path === trackPath)
+      if (track) track.coverPath = coverPath
+      return coverPath
+    },
     async renameFolder(oldPath: string, newName: string): Promise<string> {
       const newPath = await window.nyro.invoke<string>('library:rename-folder', oldPath, newName)
       // Patch tracks in-memory so UI updates without a full rescan
