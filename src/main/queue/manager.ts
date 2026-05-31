@@ -131,7 +131,7 @@ class QueueManager {
     return item
   }
 
-  async addUrl(url: string, outputFolder?: string): Promise<QueueItem[]> {
+  async addUrl(url: string, outputFolder?: string, albumOverride?: string): Promise<QueueItem[]> {
     if (!this.isValidYouTubeUrl(url)) {
       throw new Error('Invalid URL')
     }
@@ -192,10 +192,11 @@ class QueueManager {
         downloadMode: settings.downloadMode,
         playlistTitle: playlistTitle ?? undefined,
         outputFolder: outputFolder || undefined,
+        albumOverride: albumOverride || undefined,
         metadata: {
           title: title || meta.title || 'Unknown Title',
           artist: artist || cleanUploader(meta.uploader) || 'Unknown Artist',
-          album: meta.album || '',
+          album: albumOverride || meta.album || '',
           year: isNaN(year as number) ? undefined : year,
           duration: meta.duration || 0,
           thumbnailUrl: meta.thumbnail,
@@ -508,10 +509,11 @@ class QueueManager {
       const baseFolder = item.outputFolder || settings.outputFolder
       let targetFolder = baseFolder
 
-      if (meta?.album) {
+      const effectiveAlbum = item.albumOverride || meta?.album
+      if (effectiveAlbum) {
         // Named album → Albums/Album Title (Year)/
-        const safeAlbum = sanitizeFilenameComponent(meta.album)
-        const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
+        const safeAlbum = sanitizeFilenameComponent(effectiveAlbum)
+        const folderName = meta?.year ? `${safeAlbum} (${meta.year})` : safeAlbum
         targetFolder = join(baseFolder, 'Albums', folderName)
       } else if (item.playlistTitle) {
         // Generic playlist → Playlists/Playlist Name/

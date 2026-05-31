@@ -25,6 +25,9 @@ const loading = ref(false)
 const error = ref('')
 const batchProgress = ref('')   // e.g. "3 / 7"
 
+// Per-download album override (empty = use metadata / playlist title)
+const albumOverride = ref('')
+
 // Per-download folder override (empty = use global setting)
 const folderOverride = ref('')
 const folderLabel = computed(() => {
@@ -73,7 +76,7 @@ async function handleAdd() {
   for (const url of urls) {
     if (isBatch.value) batchProgress.value = `${done} / ${urls.length}`
     try {
-      await queueStore.addUrl(url, folderOverride.value || undefined)
+      await queueStore.addUrl(url, folderOverride.value || undefined, albumOverride.value.trim() || undefined)
       done++
     } catch (e: any) {
       errors.push(e?.message || url)
@@ -142,15 +145,31 @@ function onKeydown(e: KeyboardEvent) {
       </button>
     </div>
 
-    <!-- Folder row -->
-    <div class="folder-row">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="folder-icon">
-        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
-      </svg>
-      <span class="folder-label" :class="{ override: !!folderOverride }" :title="folderOverride || settingsStore.settings.outputFolder">{{ folderLabel }}</span>
-      <span v-if="folderOverride" class="folder-badge">custom</span>
-      <button class="folder-btn" @click="pickFolder">Browse…</button>
-      <button v-if="folderOverride" class="folder-clear" title="Reset to default" @click="clearFolderOverride">✕</button>
+    <!-- Album + Folder row -->
+    <div class="meta-row">
+      <div class="album-field">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon">
+          <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
+        </svg>
+        <input
+          v-model="albumOverride"
+          class="album-input"
+          placeholder="Album name (optional)"
+          :disabled="loading"
+          @keydown.enter.prevent="handleAdd"
+        />
+        <button v-if="albumOverride" class="folder-clear" title="Clear album" @click="albumOverride = ''">✕</button>
+      </div>
+
+      <div class="folder-field">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+        </svg>
+        <span class="folder-label" :class="{ override: !!folderOverride }" :title="folderOverride || settingsStore.settings.outputFolder">{{ folderLabel }}</span>
+        <span v-if="folderOverride" class="folder-badge">custom</span>
+        <button class="folder-btn" @click="pickFolder">Browse…</button>
+        <button v-if="folderOverride" class="folder-clear" title="Reset to default" @click="clearFolderOverride">✕</button>
+      </div>
     </div>
 
     <div class="bottom-row">
@@ -220,14 +239,29 @@ function onKeydown(e: KeyboardEvent) {
 .add-btn.empty { opacity: 0.35; }
 .add-btn:disabled:not(.empty) { opacity: 0.65; }
 
-/* ── Folder row ──────────────────────────────────── */
-.folder-row {
+/* ── Album + Folder row ──────────────────────────── */
+.meta-row {
+  display: flex; gap: 6px; min-width: 0;
+}
+.album-field, .folder-field {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: var(--radius);
   background: var(--bg-2); border: 1px solid var(--line);
   font-size: 11px; color: var(--tx-faint);
   min-width: 0;
 }
+.album-field { flex: 1; }
+.folder-field { flex: 1; }
+.meta-icon { flex-shrink: 0; color: var(--tx-faint); }
+.album-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--tx); font-size: 11px; font-family: inherit;
+  min-width: 0;
+}
+.album-input::placeholder { color: var(--tx-faint); }
+.album-input:disabled { opacity: 0.5; }
+/* keep old folder-row class for compat */
+.folder-row { display: none; }
 .folder-icon { flex-shrink: 0; color: var(--tx-faint); }
 .folder-label {
   flex: 1; min-width: 0;

@@ -31,8 +31,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
 
   // queue:add — validate URL, fetch metadata, create queue items
-  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string, outputFolder?: string) => {
-    return await queueManager.addUrl(url, outputFolder)
+  ipcMain.handle(IPC_CHANNELS.QUEUE_ADD, async (_event, url: string, outputFolder?: string, albumOverride?: string) => {
+    return await queueManager.addUrl(url, outputFolder, albumOverride)
   })
 
   // queue:remove — remove an item from the queue

@@ -37,6 +37,7 @@ export interface QueueItem {
   completedAt?: number
   downloadMode?: 'audio' | 'video'
   outputFolder?: string   // overrides the global setting for this item
+  albumOverride?: string  // forces album name + folder grouping for this item
   liked?: boolean
 }
 
