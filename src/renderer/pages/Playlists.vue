@@ -358,8 +358,8 @@ function onDrop(toIdx: number) {
 
 /* ── Header ──────────────────────────────────────────── */
 .pl-header {
-  height: 52px; padding: 0 16px;
-  display: flex; align-items: center; gap: 10px;
+  min-height: 52px; padding: 8px 16px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   background: linear-gradient(to bottom, var(--bg-1), var(--bg-0));
   border-bottom: 1px solid var(--line); flex-shrink: 0;
 }

@@ -194,8 +194,8 @@ async function addAllEpisodes() {
 <style scoped>
 .podcasts { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .toolbar {
-  display: flex; align-items: center; gap: 10px;
-  height: 52px; padding: 0 16px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  min-height: 52px; padding: 8px 16px;
   background: var(--bg-0); border-bottom: 1px solid var(--line); flex-shrink: 0;
 }
 .toolbar-title { font-size: 15px; font-weight: 700; color: var(--tx); margin: 0; display: flex; align-items: center; gap: 8px; }
