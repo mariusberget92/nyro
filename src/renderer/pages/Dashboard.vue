@@ -5,11 +5,14 @@ import DownloadForm from '../components/DownloadForm.vue'
 import QueueList from '../components/QueueList.vue'
 import BatchBar from '../components/BatchBar.vue'
 import EditSheet from '../components/EditSheet.vue'
+import ViewSwitcher from '../components/ViewSwitcher.vue'
 import { useQueueStore } from '../stores/queueStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useViewStore } from '../stores/viewStore'
 
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
+const viewStore = useViewStore()
 
 const qualityLabel = computed(() => {
   if (settingsStore.settings.downloadMode === 'video') {
@@ -81,6 +84,11 @@ function handleSave(_id: string, _artist: string, _title: string) {
 
         <div class="sep" />
 
+        <!-- View mode -->
+        <ViewSwitcher :model-value="viewStore.queue" @update:model-value="viewStore.set('queue', $event)" />
+
+        <div class="sep" />
+
         <!-- Run queue -->
         <button v-if="!queueStore.isProcessing" class="primary-btn" @click="queueStore.startQueue()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -120,6 +128,7 @@ function handleSave(_id: string, _artist: string, _title: string) {
     <div class="queue-scroll">
       <QueueList
         :selected-ids="selectedIds"
+        :view-mode="viewStore.queue"
         @toggle-select="toggleSelect"
         @edit="editItem = $event"
       />

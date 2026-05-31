@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { QueueItem } from '@shared/types/queue'
+import type { ViewMode } from '../stores/viewStore'
 import { useQueueStore, progressMap } from '../stores/queueStore'
 
 const props = defineProps<{
@@ -8,6 +9,7 @@ const props = defineProps<{
   index: number
   selected: boolean
   showIndex: boolean
+  viewMode?: ViewMode
 }>()
 
 const emit = defineEmits<{
@@ -75,6 +77,8 @@ const progressColor = computed(() => {
   return 'var(--accent)'
 })
 
+const isRow = computed(() => props.viewMode === 'list' || props.viewMode === 'details')
+
 const errorDetails = computed(() => {
   const raw = props.item.error || 'An unknown error occurred.'
   let fix = ''
@@ -114,7 +118,57 @@ const errorDetails = computed(() => {
 </script>
 
 <template>
-  <div class="card" :class="{ 'card--selected': selected }" @click.stop="emit('toggleSelect', item.id)">
+  <!-- ── Row layout (List / Details) ── -->
+  <div v-if="isRow" class="row-item" :class="{ 'row-item--selected': selected, 'row-item--details': viewMode === 'details' }" @click.stop="emit('toggleSelect', item.id)">
+    <div class="row-thumb">
+      <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" />
+      <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="thumb-placeholder">
+        <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
+      </svg>
+      <div v-if="progressVisible" class="row-thumb-progress">
+        <div class="row-thumb-progress-fill" :style="{ width: `${liveProgress}%`, background: progressColor }" />
+      </div>
+    </div>
+    <div class="row-info">
+      <span class="row-title">{{ title }}</span>
+      <span v-if="artist" class="row-artist">{{ artist }}</span>
+    </div>
+    <span v-if="viewMode === 'details'" class="row-col row-duration">{{ duration || '—' }}</span>
+    <span v-if="viewMode === 'details'" class="row-col row-progress-pct">{{ progressVisible ? `${Math.round(liveProgress)}%` : '—' }}</span>
+    <span class="row-col">
+      <span class="pill" :class="pillColor">{{ pillLabel }}</span>
+    </span>
+    <div class="row-actions">
+      <button v-if="item.status === 'failed'" class="row-btn" title="Retry" @click.stop="queueStore.addUrl(item.url)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a8 8 0 1014.07-8.36L20 4"/>
+        </svg>
+      </button>
+      <button class="row-btn" title="Edit" @click.stop="emit('edit', item)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+      <button
+        class="row-btn heart-btn" :class="{ 'heart-btn--liked': item.liked }"
+        :title="item.liked ? 'Unlike' : 'Like'"
+        @click.stop="queueStore.toggleLike(item.id)"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" :fill="item.liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
+      <button class="row-btn row-btn--danger" title="Remove" @click.stop="queueStore.removeItem(item.id)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card layout (Small / Medium / Large / XLarge) ── -->
+  <div v-else class="card" :class="{ 'card--selected': selected }" @click.stop="emit('toggleSelect', item.id)">
     <!-- Thumbnail -->
     <div class="card-thumb">
       <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" />
@@ -216,7 +270,7 @@ const errorDetails = computed(() => {
         </div>
       </div>
     </Transition>
-  </div>
+  </div><!-- end card v-else -->
 </template>
 
 <style scoped>
@@ -451,4 +505,54 @@ const errorDetails = computed(() => {
 
 .err-enter-active, .err-leave-active { transition: opacity 0.15s, transform 0.15s; }
 .err-enter-from, .err-leave-to { opacity: 0; transform: translateY(4px); }
+
+/* ── Row layout (List / Details) ──────────────────────── */
+.row-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer; transition: background 0.1s, border-color 0.1s;
+}
+.row-item:hover { background: var(--bg-2); }
+.row-item--selected { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+.row-thumb {
+  position: relative; width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 6px; background: var(--bg-3); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
+}
+.row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.row-thumb-progress {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.1);
+}
+.row-thumb-progress-fill { height: 100%; }
+
+.row-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-title {
+  font-size: 12.5px; font-weight: 600; color: var(--tx);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row-artist {
+  font-size: 11px; color: var(--tx-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.row-col { flex-shrink: 0; font-size: 11px; color: var(--tx-faint); }
+.row-duration, .row-progress-pct {
+  width: 52px; text-align: right;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+}
+
+.row-actions {
+  display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s;
+}
+.row-item:hover .row-actions { opacity: 1; }
+.row-btn {
+  width: 26px; height: 26px; border-radius: 6px; border: none;
+  background: transparent; color: var(--tx-faint); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+.row-btn:hover { background: var(--bg-3); color: var(--tx); }
+.row-btn--danger:hover { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
 </style>
