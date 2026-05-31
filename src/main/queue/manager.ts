@@ -163,6 +163,11 @@ class QueueManager {
         ?? (meta.upload_date ? parseInt(meta.upload_date.substring(0, 4)) : undefined)
 
       const { artist, title } = parseArtistTitle(meta.title || '')
+      // Prefer an explicit album tag; fall back to playlist title or channel name
+      const album = meta.album
+        || playlistTitle
+        || cleanUploader(meta.uploader)
+        || ''
 
       return {
         id: uuidv4(),
@@ -175,7 +180,7 @@ class QueueManager {
         metadata: {
           title: title || meta.title || 'Unknown Title',
           artist: artist || cleanUploader(meta.uploader) || 'Unknown Artist',
-          album: meta.album || '',
+          album,
           year: isNaN(year as number) ? undefined : year,
           duration: meta.duration || 0,
           thumbnailUrl: meta.thumbnail,
@@ -485,18 +490,28 @@ class QueueManager {
       }
 
       // Step 4: Move to output folder
+      // effectiveAlbum mirrors the fallback logic used at queue-add time
+      const effectiveAlbum = meta?.album
+        || item.playlistTitle
+        || (meta ? cleanUploader((meta as any).uploader) : '')
+        || ''
+
       const baseFolder = settings.outputFolder
       let targetFolder = baseFolder
 
       if (meta?.album) {
-        // Named album → Albums/Album Title (Year)/
+        // Explicit album tag → Albums/Album Title (Year)/
         const safeAlbum = sanitizeFilenameComponent(meta.album)
         const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
         targetFolder = join(baseFolder, 'Albums', folderName)
       } else if (item.playlistTitle) {
-        // Generic playlist → Playlists/Playlist Name/
+        // Playlist → Playlists/Playlist Name/
         const safeName = sanitizeFilenameComponent(item.playlistTitle)
         targetFolder = join(baseFolder, 'Playlists', safeName)
+      } else if (effectiveAlbum) {
+        // Channel/uploader fallback → Artists/Channel Name/
+        const safeName = sanitizeFilenameComponent(effectiveAlbum)
+        targetFolder = join(baseFolder, 'Artists', safeName)
       }
 
       if (!existsSync(targetFolder)) {
