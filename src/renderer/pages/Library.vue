@@ -159,7 +159,6 @@ async function commitNewFolder() {
 }
 
 // ── Link track to folder ──────────────────────────────────
-const linkingTrack = ref<LibraryTrack | null>(null)
 const linkError = ref('')
 
 async function linkTrackToFolder(track: LibraryTrack) {
@@ -633,6 +632,35 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
     </Transition>
 
   </div>
+
+  <!-- ── New Folder modal ─────────────────────────────── -->
+  <Transition name="modal">
+    <div v-if="showNewFolder" class="modal-backdrop" @click.self="showNewFolder = false">
+      <div class="modal-box">
+        <h3 class="modal-title">New Folder</h3>
+        <p class="modal-hint">Creates an empty folder inside your {{ view === 'podcasts' ? 'podcasts' : view === 'videos' ? 'video' : 'music' }} directory.</p>
+        <input
+          ref="newFolderInputEl"
+          v-model="newFolderName"
+          class="modal-input"
+          placeholder="Folder name…"
+          @keydown.enter="commitNewFolder"
+          @keydown.esc="showNewFolder = false"
+        />
+        <p v-if="newFolderError" class="modal-error">{{ newFolderError }}</p>
+        <div class="modal-actions">
+          <button class="modal-cancel" @click="showNewFolder = false">Cancel</button>
+          <button class="modal-confirm" :disabled="!newFolderName.trim()" @click="commitNewFolder">Create</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- ── Link error toast ─────────────────────────────── -->
+  <Transition name="toast">
+    <div v-if="linkError" class="link-toast">{{ linkError }}</div>
+  </Transition>
+
 </template>
 
 <style scoped>
@@ -699,7 +727,7 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .bulk-bar-enter-active, .bulk-bar-leave-active { transition: height 0.15s, opacity 0.15s; }
 .bulk-bar-enter-from, .bulk-bar-leave-to { height: 0; opacity: 0; }
 
-.lib-title { font-size: 15px; font-weight: 800; color: var(--tx); margin: 0; }
+.lib-title { font-size: 16px; font-weight: 800; color: var(--tx); margin: 0; }
 .lib-count { font-size: 10.5px; color: var(--tx-faint); background: var(--bg-2); padding: 2px 7px; border-radius: 20px; }
 .spacer { flex: 1; }
 .search-wrap {
@@ -817,8 +845,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 }
 .card-art:hover .cover-upload-btn { opacity: 1; }
 .cover-upload-btn:hover { background: rgba(136,192,208,0.4); }
-.card-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-sub  { display: block; font-size: 11px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-name { display: block; font-size: 13px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-sub  { display: block; font-size: 11.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Artist list ───────────────────────────────── */
 .artist-list { display: flex; flex-direction: column; gap: 2px; }
@@ -836,8 +864,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
 }
 .artist-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.artist-name { font-size: 13px; font-weight: 600; color: var(--tx); }
-.artist-meta { font-size: 11px; color: var(--tx-faint); }
+.artist-name { font-size: 13.5px; font-weight: 600; color: var(--tx); }
+.artist-meta { font-size: 11.5px; color: var(--tx-faint); }
 
 /* ── Flat track list ───────────────────────────── */
 .track-list { display: flex; flex-direction: column; }
@@ -858,8 +886,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   display: flex; align-items: center; justify-content: center; color: var(--tx-faint);
 }
 .tr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.tr-title { font-size: 12.5px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tr-artist { font-size: 10.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-title { font-size: 13px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-artist { font-size: 11px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-path {
   font-size: 10px; color: var(--tx-dim); opacity: 0;
   font-family: 'JetBrains Mono', monospace;
@@ -876,8 +904,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 }
 .track-row:hover .reveal-btn { opacity: 1; }
 .reveal-btn:hover { color: var(--accent); background: var(--accent-glow); border-color: var(--accent); }
-.tr-album { font-size: 11px; color: var(--tx-faint); flex-shrink: 0; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
+.tr-album { font-size: 11.5px; color: var(--tx-faint); flex-shrink: 0; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx-faint); flex-shrink: 0; }
 
 /* ── Detail panel ──────────────────────────────── */
 .detail-panel { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
@@ -899,8 +927,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .artist-shape { border-radius: 50%; }
 .detail-meta { display: flex; flex-direction: column; gap: 4px; }
 .detail-label { font-size: 9.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
-.detail-name { font-size: 20px; font-weight: 800; color: var(--tx); margin: 0; }
-.detail-sub { font-size: 12px; color: var(--tx-faint); }
+.detail-name { font-size: 21px; font-weight: 800; color: var(--tx); margin: 0; }
+.detail-sub { font-size: 12.5px; color: var(--tx-faint); }
 .play-all-btn {
   margin-top: 6px; display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: 20px;
@@ -975,4 +1003,68 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   min-width: 0;
 }
 .detail-name-row .detail-name { margin: 0; }
+
+/* ── New Folder button ─────────────────────────── */
+.new-folder-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.new-folder-btn:hover { background: var(--bg-3); color: var(--tx); }
+
+/* ── Modal ─────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-box {
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 24px 28px;
+  min-width: 320px; max-width: 440px; width: 100%;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.modal-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--tx); }
+.modal-hint { margin: 0; font-size: 12px; color: var(--tx-dim); }
+.modal-input {
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px;
+  color: var(--tx); font-size: 13px; padding: 8px 12px;
+  outline: none; font-family: inherit;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-error { margin: 0; font-size: 11px; color: var(--bad); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.modal-cancel {
+  padding: 0 16px; height: 32px; border-radius: 8px;
+  background: var(--bg-2); border: 1px solid var(--line-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.modal-cancel:hover { background: var(--bg-3); color: var(--tx); }
+.modal-confirm {
+  padding: 0 16px; height: 32px; border-radius: 8px;
+  background: var(--accent); border: none;
+  color: var(--bg-0); font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.modal-confirm:not(:disabled):hover { filter: brightness(1.1); }
+
+/* ── Link error toast ──────────────────────────── */
+.link-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--bad); color: #fff; font-size: 12px; font-weight: 600;
+  padding: 8px 18px; border-radius: 20px; z-index: 300;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ── Modal / toast transitions ─────────────────── */
+.modal-enter-active, .modal-leave-active { transition: opacity 0.18s; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>
