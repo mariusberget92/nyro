@@ -32,7 +32,16 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
 
     <!-- Logo -->
     <div class="logo">
-      <div class="logo-mark">&gt;_</div>
+      <div class="logo-mark">
+        <svg width="24" height="30" viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="4"  y1="3"  x2="4"  y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="4"  y1="3"  x2="17" y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="17" y1="3"  x2="17" y2="23" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="17" y1="23" x2="13" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="17" y1="23" x2="21" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <line x1="13" y1="29" x2="22" y2="29" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
     </div>
 
     <!-- Nav -->
@@ -184,19 +193,14 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   margin-bottom: 16px;
 }
 .logo-mark {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-2);
-  border: 1.5px solid var(--accent);
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3d7fff, #7c5cff);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: -0.5px;
+  box-shadow: 0 4px 16px rgba(61,127,255,0.35);
 }
 
 /* ── Nav ──────────────────────────────────────── */

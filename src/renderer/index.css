@@ -1,36 +1,41 @@
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* ── Backgrounds — GitHub-dark inspired flat palette ── */
-    --bg-canvas: #161b22;
-    --bg-0:      #1c2128;
-    --bg-1:      #22272e;
-    --bg-2:      #2d333b;
-    --bg-3:      #373e47;
-    --bg-4:      #444c56;
+    /* ── Backgrounds — Nyro Graphite palette ── */
+    --bg-canvas: #0e131b;
+    --bg-0:      #121820;
+    --bg-1:      #171d28;
+    --bg-2:      #1e2635;
+    --bg-3:      #25303f;
+    --bg-4:      #2e3b4d;
 
-    /* ── Text — high readability ── */
-    --tx:        #e6edf3;
-    --tx-dim:    #adbac7;
-    --tx-faint:  #768390;
+    /* ── Text ── */
+    --tx:        #e7ecf3;
+    --tx-dim:    #98a8bb;
+    --tx-faint:  #566678;
 
     /* ── Lines ── */
-    --line:      rgba(255,255,255,0.08);
-    --line-2:    rgba(255,255,255,0.14);
+    --line:      rgba(255,255,255,0.07);
+    --line-2:    rgba(255,255,255,0.12);
 
-    /* ── Accent — GitHub blue ── */
-    --accent:              #58a6ff;
-    --accent-2:            #79c0ff;
-    --accent-glow:         rgba(88,166,255,0.10);
-    --accent-glow-strong:  rgba(88,166,255,0.20);
+    /* ── Accent — Nyro Blue → Violet ── */
+    --accent:              #3d7fff;
+    --accent-2:            #7c5cff;
+    --accent-gradient:     linear-gradient(135deg, #3d7fff, #7c5cff);
+    --accent-glow:         rgba(61,127,255,0.12);
+    --accent-glow-strong:  rgba(61,127,255,0.22);
 
     --ok:   #3fb950;
     --warn: #d29922;
     --bad:  #f85149;
-    --conv: #bc8cff;
+    --conv: #a78bfa;
 
     --radius: 8px;
     --rail-w: 96px;
@@ -42,7 +47,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
     font-size: 14px;
   }
 
@@ -57,7 +62,7 @@
   ::-webkit-scrollbar        { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track  { background: transparent; }
   ::-webkit-scrollbar-thumb  {
-    background: rgba(88,166,255,0.30);
+    background: rgba(61,127,255,0.30);
     border-radius: 2px;
   }
 
@@ -69,7 +74,7 @@
 
   /* ── Selection ─────────────────────────────────────── */
   ::selection {
-    background: rgba(88, 166, 255, 0.25);
+    background: rgba(61,127,255,0.25);
     color: var(--tx);
   }
 }

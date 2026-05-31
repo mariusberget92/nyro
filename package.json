@@ -16,6 +16,7 @@
     "lint": "eslint src --ext .ts,.vue"
   },
   "dependencies": {
+    "@fontsource/space-grotesk": "^5.2.10",
     "@vueuse/core": "^10.9.0",
     "electron-store": "^8.1.0",
     "node-id3": "^0.2.6",

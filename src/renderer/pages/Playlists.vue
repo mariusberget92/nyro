@@ -400,12 +400,12 @@ function onDrop(toIdx: number) {
 .create-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 12px; height: 30px; border-radius: 8px;
-  border: 1px solid rgba(88,166,255,0.3);
-  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.06));
+  border: 1px solid rgba(61,127,255,0.3);
+  background: linear-gradient(135deg, rgba(61,127,255,0.12), rgba(61,127,255,0.06));
   color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer;
   transition: box-shadow 0.15s;
 }
-.create-btn:hover { box-shadow: 0 0 10px rgba(88,166,255,0.25); }
+.create-btn:hover { box-shadow: 0 0 10px rgba(61,127,255,0.25); }
 
 /* ── Body ────────────────────────────────────────────── */
 .pl-body { flex: 1; display: flex; overflow: hidden; }
@@ -481,7 +481,7 @@ function onDrop(toIdx: number) {
   cursor: pointer; opacity: 0; transition: opacity 0.15s; z-index: 3;
 }
 .pl-art:hover .cover-upload-btn { opacity: 1; }
-.cover-upload-btn:hover { background: rgba(88,166,255,0.55); }
+.cover-upload-btn:hover { background: rgba(61,127,255,0.55); }
 
 .pl-art-overlay {
   position: absolute; inset: 0;
@@ -539,7 +539,7 @@ function onDrop(toIdx: number) {
   transition: box-shadow 0.15s;
 }
 .play-all-btn:disabled { opacity: 0.4; cursor: default; }
-.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(88,166,255,0.4); }
+.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(61,127,255,0.4); }
 .add-tracks-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px; border-radius: 20px;

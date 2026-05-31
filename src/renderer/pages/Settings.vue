@@ -230,7 +230,7 @@ async function saveApiKey() {
             @input="s.setAccent(($event.target as HTMLInputElement).value)"
           />
           <span class="color-value">{{ s.accentColor }}</span>
-          <button class="btn-ghost small" @click="s.setAccent('#58a6ff')">Reset</button>
+          <button class="btn-ghost small" @click="s.setAccent('#3d7fff')">Reset</button>
         </div>
       </section>
 

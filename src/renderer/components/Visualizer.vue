@@ -39,9 +39,9 @@ function draw() {
     const x   = i * barW
     // Gradient: accent at top, faded at bottom
     const grad = ctx.createLinearGradient(0, H - bH, 0, H)
-    grad.addColorStop(0,   `rgba(88,166,255,${0.85 * v + 0.1})`)
-    grad.addColorStop(0.6, `rgba(88,166,255,${0.35 * v + 0.05})`)
-    grad.addColorStop(1,   `rgba(88,166,255,0.04)`)
+    grad.addColorStop(0,   `rgba(61,127,255,${0.85 * v + 0.1})`)
+    grad.addColorStop(0.6, `rgba(61,127,255,${0.35 * v + 0.05})`)
+    grad.addColorStop(1,   `rgba(61,127,255,0.04)`)
     ctx.fillStyle = grad
     ctx.fillRect(x + gap / 2, H - bH, barW - gap, bH)
   }

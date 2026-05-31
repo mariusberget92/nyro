@@ -745,8 +745,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .scan-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 12px; height: 30px; border-radius: 8px;
-  border: 1px solid rgba(88,166,255,0.3);
-  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.06));
+  border: 1px solid rgba(61,127,255,0.3);
+  background: linear-gradient(135deg, rgba(61,127,255,0.12), rgba(61,127,255,0.06));
   color: var(--accent); font-size: 12px; font-weight: 600;
   font-family: 'JetBrains Mono', monospace; cursor: pointer;
   transition: box-shadow 0.15s;
@@ -846,7 +846,7 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   z-index: 2;
 }
 .card-art:hover .cover-upload-btn { opacity: 1; }
-.cover-upload-btn:hover { background: rgba(88,166,255,0.4); }
+.cover-upload-btn:hover { background: rgba(61,127,255,0.4); }
 .card-name { display: block; font-size: 13px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub  { display: block; font-size: 11.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
