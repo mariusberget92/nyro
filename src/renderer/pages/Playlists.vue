@@ -3,11 +3,14 @@ import { ref, computed } from 'vue'
 import { usePlaylistStore, type CustomPlaylist } from '../stores/playlistStore'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
+import { useViewStore } from '../stores/viewStore'
+import ViewSwitcher from '../components/ViewSwitcher.vue'
 import type { LibraryTrack } from '@shared/types/library'
 
 const plStore  = usePlaylistStore()
 const lib      = useLibraryStore()
 const player   = usePlayerStore()
+const views    = useViewStore()
 
 // ── View state ─────────────────────────────────────────
 const selected   = ref<CustomPlaylist | null>(null)
@@ -123,6 +126,7 @@ function onDrop(toIdx: number) {
         </svg>
         New playlist
       </button>
+      <ViewSwitcher :model-value="views.playlists" @update:model-value="views.set('playlists', $event)" />
     </header>
 
     <!-- Body -->
@@ -141,7 +145,7 @@ function onDrop(toIdx: number) {
           <button class="create-btn-sm" @click="openCreate">Create one</button>
         </div>
 
-        <div v-else class="pl-grid">
+        <div v-else class="pl-grid" :class="`view-${views.playlists}`">
           <div
             v-for="pl in plStore.playlists" :key="pl.id"
             class="pl-card" :class="{ active: selected?.id === pl.id }"
@@ -399,6 +403,23 @@ function onDrop(toIdx: number) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
+}
+.pl-grid.view-small  { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.pl-grid.view-medium { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.pl-grid.view-large  { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+.pl-grid.view-xlarge { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.pl-grid.view-list, .pl-grid.view-details {
+  grid-template-columns: 1fr; gap: 2px;
+}
+.pl-grid.view-list .pl-card, .pl-grid.view-details .pl-card {
+  display: flex; flex-direction: row; align-items: center;
+  border-radius: 8px; overflow: visible;
+}
+.pl-grid.view-list .pl-mosaic, .pl-grid.view-details .pl-mosaic {
+  width: 48px; height: 48px; flex-shrink: 0; border-radius: 6px 0 0 6px;
+}
+.pl-grid.view-list .pl-card-body, .pl-grid.view-details .pl-card-body {
+  padding: 6px 10px; flex: 1;
 }
 .pl-card {
   background: var(--bg-1); border: 1px solid var(--line);

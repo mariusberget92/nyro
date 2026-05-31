@@ -2,9 +2,12 @@
 import { ref, computed } from 'vue'
 import { useHistoryStore } from '../stores/historyStore'
 import { usePlayerStore } from '../stores/playerStore'
+import { useViewStore } from '../stores/viewStore'
+import ViewSwitcher from '../components/ViewSwitcher.vue'
 
 const history = useHistoryStore()
 const player = usePlayerStore()
+const views = useViewStore()
 
 const tab = ref<'recent' | 'top'>('recent')
 
@@ -34,6 +37,7 @@ function coverStyle(coverPath?: string | null) {
     <div class="page-header">
       <h1 class="page-title">Play History</h1>
       <div class="header-right">
+        <ViewSwitcher :model-value="views.history" @update:model-value="views.set('history', $event)" />
         <div class="tab-bar">
           <button :class="{ active: tab === 'recent' }" @click="tab = 'recent'">Recent</button>
           <button :class="{ active: tab === 'top' }"    @click="tab = 'top'">Most Played</button>
@@ -43,7 +47,7 @@ function coverStyle(coverPath?: string | null) {
     </div>
 
     <!-- Recent tab -->
-    <div v-if="tab === 'recent'" class="track-list">
+    <div v-if="tab === 'recent'" class="track-list" :class="`view-${views.history}`">
       <div v-if="!recent.length" class="empty-state">No play history yet. Start listening!</div>
       <div
         v-for="(entry, i) in recent" :key="i"
@@ -67,7 +71,7 @@ function coverStyle(coverPath?: string | null) {
     </div>
 
     <!-- Top played tab -->
-    <div v-if="tab === 'top'" class="track-list">
+    <div v-if="tab === 'top'" class="track-list" :class="`view-${views.history}`">
       <div v-if="!top.length" class="empty-state">No play history yet. Start listening!</div>
       <div
         v-for="(entry, i) in top" :key="entry.track.path"
@@ -173,4 +177,12 @@ function coverStyle(coverPath?: string | null) {
 }
 .track-row:hover .play-row-btn { opacity: 1; }
 .play-row-btn:hover { background: var(--accent); color: var(--bg-0); }
+
+/* ── View mode overrides ─────────────────────── */
+.view-small .track-row  { padding: 3px 6px; }
+.view-small .track-cover { width: 28px; height: 28px; }
+.view-large .track-row  { padding: 10px 10px; }
+.view-large .track-cover, .view-xlarge .track-cover { width: 52px; height: 52px; }
+.view-xlarge .track-row { padding: 12px 10px; }
+.view-large .track-title, .view-xlarge .track-title { font-size: 14px; }
 </style>

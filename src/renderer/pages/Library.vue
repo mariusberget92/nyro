@@ -2,10 +2,13 @@
 import { ref, computed, nextTick } from 'vue'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
+import { useViewStore } from '../stores/viewStore'
+import ViewSwitcher from '../components/ViewSwitcher.vue'
 import type { LibraryAlbum, LibraryArtist, LibraryTrack } from '@shared/types/library'
 
-const lib   = useLibraryStore()
+const lib    = useLibraryStore()
 const player = usePlayerStore()
+const views  = useViewStore()
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
@@ -151,6 +154,8 @@ const detailArtist = computed((): LibraryArtist | null => {
         </svg>
         {{ lib.scanning ? 'Scanning…' : 'Scan' }}
       </button>
+
+      <ViewSwitcher :model-value="views.library" @update:model-value="views.set('library', $event)" />
     </header>
 
     <!-- Tab bar -->
@@ -172,7 +177,7 @@ const detailArtist = computed((): LibraryArtist | null => {
     <div v-else class="lib-body">
 
       <!-- ── LIST panel ─────────────────────────────── -->
-      <div class="list-panel" :class="{ narrow: !!selected }">
+      <div class="list-panel" :class="{ narrow: !!selected, [`view-${views.library}`]: true }">
 
         <!-- Albums grid -->
         <div v-if="view === 'albums'" class="grid">
@@ -490,6 +495,31 @@ const detailArtist = computed((): LibraryArtist | null => {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px;
 }
+.view-small  .grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.view-medium .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+.view-large  .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+.view-xlarge .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+/* List / Details: single column with horizontal card layout */
+.view-list .grid, .view-details .grid {
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+.view-list .card, .view-details .card {
+  display: flex; flex-direction: row; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 8px; transform: none !important;
+  background: transparent;
+}
+.view-list .card:hover, .view-details .card:hover { background: var(--bg-2); transform: none !important; }
+.view-list .card-art, .view-details .card-art {
+  width: 40px; height: 40px; aspect-ratio: 1; flex-shrink: 0; border-radius: 6px;
+}
+.view-list .card-label-row, .view-details .card-label-row {
+  flex: 1; min-width: 0; flex-direction: row; align-items: center;
+}
+.view-list .card-name, .view-details .card-name { margin-top: 0; }
+/* Track list respects list/details too — already single column, just tighten */
+.view-small .track-list .track-row { padding: 4px 6px; }
+.view-large .track-list .track-row, .view-xlarge .track-list .track-row { padding: 10px 12px; min-height: 52px; }
 .card {
   background: none; border: none; cursor: pointer; text-align: left;
   padding: 0; border-radius: 10px;

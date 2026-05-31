@@ -4,10 +4,13 @@ import type { TaddyEpisode, TaddySeries, TaddySearchResult } from '@shared/types
 import { useSettingsStore } from '../stores/settingsStore'
 import { useQueueStore } from '../stores/queueStore'
 import { useToastStore } from '../stores/toastStore'
+import { useViewStore } from '../stores/viewStore'
+import ViewSwitcher from '../components/ViewSwitcher.vue'
 
 const settingsStore = useSettingsStore()
 const queueStore = useQueueStore()
 const toastStore = useToastStore()
+const views = useViewStore()
 
 const hasCredentials = computed(() =>
   !!settingsStore.settings.taddyUserId && !!settingsStore.settings.taddyApiKey
@@ -94,7 +97,7 @@ async function addAllEpisodes() {
 </script>
 
 <template>
-  <div class="podcasts">
+  <div class="podcasts" :class="`view-${views.podcasts}`">
     <header class="toolbar">
       <h1 class="toolbar-title">
         <template v-if="selectedShow">
@@ -107,6 +110,7 @@ async function addAllEpisodes() {
       </h1>
       <div class="spacer" />
       <button v-if="selectedShow" class="primary-btn" @click="addAllEpisodes">Add all to queue</button>
+      <ViewSwitcher :model-value="views.podcasts" @update:model-value="views.set('podcasts', $event)" />
     </header>
 
     <!-- No credentials -->
@@ -294,4 +298,16 @@ async function addAllEpisodes() {
 
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── View mode overrides ─────────────────────── */
+.view-small  .card-thumb, .view-list    .card-thumb, .view-details .card-thumb { width: 36px; height: 36px; }
+.view-large  .card-thumb { width: 68px; height: 68px; }
+.view-xlarge .card-thumb { width: 88px; height: 88px; }
+.view-small  .ep-thumb   { width: 30px; height: 30px; }
+.view-large  .ep-thumb   { width: 54px; height: 54px; }
+.view-xlarge .ep-thumb   { width: 70px; height: 70px; }
+.view-small  .show-card, .view-list .show-card, .view-details .show-card { padding: 6px 12px; }
+.view-large  .show-card, .view-xlarge .show-card { padding: 14px 18px; }
+.view-small  .episode-row, .view-list .episode-row, .view-details .episode-row { padding: 6px 12px; }
+.view-large  .episode-row, .view-xlarge .episode-row { padding: 14px 18px; }
 </style>
