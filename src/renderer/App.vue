@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import Rail from './components/Rail.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import ToastContainer from './components/ToastContainer.vue'
@@ -16,10 +16,56 @@ const toastStore = useToastStore()
 const libraryStore = useLibraryStore()
 const player = usePlayerStore()
 
+function onKeyDown(e: KeyboardEvent) {
+  const tag = (e.target as HTMLElement)?.tagName?.toLowerCase() ?? ''
+  const editable = (e.target as HTMLElement)?.isContentEditable
+  if (['input', 'textarea', 'select'].includes(tag) || editable) return
+
+  switch (e.key) {
+    case ' ':
+      e.preventDefault()
+      player.togglePlay()
+      break
+    case 'ArrowRight':
+      e.preventDefault()
+      player.seekBy(e.shiftKey ? 30 : 5)
+      break
+    case 'ArrowLeft':
+      e.preventDefault()
+      player.seekBy(e.shiftKey ? -30 : -5)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      player.setVolume(Math.min(1, player.volume + 0.05))
+      break
+    case 'ArrowDown':
+      e.preventDefault()
+      player.setVolume(Math.max(0, player.volume - 0.05))
+      break
+    case 'm':
+    case 'M':
+      player.toggleMute()
+      break
+    case 'n':
+    case 'N':
+      player.next()
+      break
+    case 'p':
+    case 'P':
+      player.prev()
+      break
+  }
+}
+
 onMounted(async () => {
   await queueStore.loadQueue()
   await settingsStore.load()
   await libraryStore.load()
+  document.addEventListener('keydown', onKeyDown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeyDown)
 })
 
 useIpc('queue:progress', (payload: any) => {

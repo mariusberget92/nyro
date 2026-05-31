@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, protocol, globalShortcut } from 'electron'
+import { app, BrowserWindow, shell, protocol, globalShortcut, Tray, Menu, nativeImage } from 'electron'
 import { join, extname } from 'path'
 import { createReadStream, statSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
@@ -69,6 +69,40 @@ if (!gotLock) {
 }
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+
+function buildTrayMenu() {
+  return Menu.buildFromTemplate([
+    {
+      label: 'Show Nyro',
+      click: () => { mainWindow?.show(); mainWindow?.focus() },
+    },
+    { type: 'separator' },
+    { label: '⏯  Play / Pause', click: () => mainWindow?.webContents.send('media:playpause') },
+    { label: '⏭  Next',         click: () => mainWindow?.webContents.send('media:next') },
+    { label: '⏮  Previous',     click: () => mainWindow?.webContents.send('media:prev') },
+    { type: 'separator' },
+    { label: 'Quit Nyro', role: 'quit' },
+  ])
+}
+
+function createTray() {
+  let icon: Electron.NativeImage
+  try {
+    const iconPath = app.isPackaged
+      ? join(process.resourcesPath, 'resources', 'icon.png')
+      : join(__dirname, '../../resources/icon.png')
+    icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+  } catch {
+    icon = nativeImage.createEmpty()
+  }
+  tray = new Tray(icon)
+  tray.setToolTip('Nyro')
+  tray.setContextMenu(buildTrayMenu())
+  tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus() })
+  // On Windows, left-click shows window
+  tray.on('click', () => { if (process.platform === 'win32') { mainWindow?.show(); mainWindow?.focus() } })
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -85,6 +119,14 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
+    }
+  })
+
+  // Minimize to tray instead of closing
+  mainWindow.on('close', (e) => {
+    if (!app.isQuitting) {
+      e.preventDefault()
+      mainWindow?.hide()
     }
   })
 
@@ -143,6 +185,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  createTray()
 
   // System-wide media key bindings
   const send = (ch: string) => mainWindow?.webContents.send(ch)
@@ -158,8 +201,13 @@ app.whenReady().then(() => {
   })
 })
 
+app.on('before-quit', () => {
+  (app as any).isQuitting = true
+})
+
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  tray?.destroy()
 })
 
 app.on('second-instance', () => {
