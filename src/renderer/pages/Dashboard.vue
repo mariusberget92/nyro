@@ -183,16 +183,18 @@ function handleSave(_id: string, _artist: string, _title: string) {
 .primary-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; height: 32px;
-  background: var(--accent);
-  color: var(--bg-0);
+  background: var(--accent-grad);
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 12px; font-weight: 700; cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
+  box-shadow: 0 6px 18px -6px rgba(61,127,255,0.7);
+  transition: opacity 0.15s, box-shadow 0.15s;
 }
 .primary-btn:hover {
-  background: var(--accent-2);
+  opacity: 0.9;
+  box-shadow: 0 8px 22px -6px rgba(61,127,255,0.85);
 }
 
 .form-panel {
