@@ -151,7 +151,7 @@ const errorDetails = computed(() => {
     </div>
     <div class="row-right">
       <span class="pill" :class="pillColor">{{ pillLabel }}</span>
-      <span v-if="item.metadata" class="row-kbps">{{ item.downloadMode === 'video' ? item.metadata.duration : '320k' }}</span>
+      <span v-if="item.metadata" class="row-kbps">{{ item.downloadMode === 'video' ? (item.metadata as any).videoQuality ?? 'video' : '320k' }}</span>
       <button class="row-action-btn" :title="item.status === 'failed' ? 'Retry' : item.status === 'completed' ? 'Show' : 'Remove'" @click.stop="item.status === 'failed' ? queueStore.addUrl(item.url) : queueStore.removeItem(item.id)">
         <svg v-if="item.status === 'failed'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a8 8 0 1014.07-8.36L20 4"/></svg>
         <svg v-else-if="item.status === 'completed'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>

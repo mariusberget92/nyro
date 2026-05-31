@@ -17,7 +17,8 @@ function loadFromStorage(): CustomPlaylist[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : []
-  } catch {
+  } catch (err) {
+    console.warn('[playlistStore] Failed to parse stored playlists, resetting:', err)
     return []
   }
 }

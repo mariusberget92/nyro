@@ -31,7 +31,7 @@ export const usePlayerStore = defineStore('player', {
       return state.lrcRaw
         .split('\n')
         .map(line => {
-          const m = line.match(/^\[(\d+):(\d+\.\d+)\](.*)$/)
+          const m = line.match(/^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/)
           if (!m) return null
           return { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() }
         })

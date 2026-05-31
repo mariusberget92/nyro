@@ -106,7 +106,7 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
     title: basename(filePath, ext),
     artist: 'Unknown Artist',
     album: 'Unknown Album',
-    source: 'video',
+    source,
   } satisfies LibraryTrack
 }
 

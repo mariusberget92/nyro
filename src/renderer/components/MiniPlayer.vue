@@ -113,6 +113,7 @@ watch(() => (player as any).currentLyricIndex, () => {
 
 onMounted(() => {
   if (audio.value) audio.value.volume = player.volume
+  if (sleepTick) clearInterval(sleepTick)
   sleepTick = setInterval(() => player.tickSleepTimer(), 5000)
 })
 

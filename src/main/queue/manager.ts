@@ -278,7 +278,8 @@ class QueueManager {
   removeItem(id: string): void {
     const item = this.queue.find((i) => i.id === id)
     if (item && ['downloading', 'converting', 'tagging', 'fetching'].includes(item.status)) {
-      this.currentAbortController?.abort()
+      const ctrl = this.currentAbortController
+      if (ctrl) ctrl.abort()
     }
     this.queue = this.queue.filter((i) => i.id !== id)
     this.lastProgressSent.delete(id)
