@@ -107,7 +107,7 @@ class QueueManager {
       }
     }
     this.queue.push(item)
-    this.persist()
+    this.schedulePersist()
     this.emitStatusChanged(item.id, 'pending')
     return item
   }
@@ -138,7 +138,7 @@ class QueueManager {
     }
 
     this.queue.push(placeholder)
-    this.persist()
+    this.schedulePersist()
     this.emitStatusChanged(placeholderId, 'fetching')
 
     let metadataList
@@ -185,7 +185,7 @@ class QueueManager {
     })
 
     this.queue.push(...newItems)
-    this.persist()
+    this.schedulePersist()
 
     for (const item of newItems) {
       this.emitStatusChanged(item.id, 'pending')
