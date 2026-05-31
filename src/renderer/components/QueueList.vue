@@ -25,7 +25,8 @@ const showIndex = computed(() => settingsStore.settings.numericPrefix)
 const isRowMode = computed(() => props.viewMode === 'list' || props.viewMode === 'details')
 
 // Row height for the virtual scroller in list/details modes
-const rowHeight = computed(() => props.viewMode === 'details' ? 52 : 52)
+// 48px thumb + 12px padding top + 12px padding bottom + 2px border + 10px gap between cards
+const rowHeight = computed(() => props.viewMode === 'details' ? 86 : 86)
 
 // Grid column sizing for icon modes
 const gridClass = computed(() => {
@@ -107,7 +108,11 @@ const cardIntrinsicHeight = computed(() => {
 .row-scroller {
   flex: 1;
   height: 100%;
-  padding: 8px 12px;
+  padding: 14px 16px;
+}
+/* Each virtual row needs bottom margin for the gap between cards */
+.row-scroller :deep(.row-item) {
+  margin-bottom: 10px;
 }
 
 /* ── Grid layouts ── */
