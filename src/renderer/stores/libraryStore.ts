@@ -13,11 +13,14 @@ export const useLibraryStore = defineStore('library', {
       const map = new Map<string, LibraryAlbum>()
       for (const t of state.tracks) {
         if (t.source !== 'music') continue
-        const key = `${t.album}__${t.artist}`
+        const key = t.album
         if (!map.has(key)) {
           map.set(key, { name: t.album, artist: t.artist, year: t.year, coverPath: t.coverPath, tracks: [] })
         }
-        map.get(key)!.tracks.push(t)
+        const entry = map.get(key)!
+        if (entry.artist !== t.artist) entry.artist = 'Various Artists'
+        if (!entry.coverPath && t.coverPath) entry.coverPath = t.coverPath
+        entry.tracks.push(t)
       }
       for (const album of map.values()) {
         album.tracks.sort((a, b) => (a.trackNumber ?? 999) - (b.trackNumber ?? 999))

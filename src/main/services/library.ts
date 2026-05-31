@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
-import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs'
-import { join, extname, basename } from 'path'
+import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
+import { join, extname, basename, dirname } from 'path'
 import NodeID3 from 'node-id3'
 import type { LibraryTrack, LibraryScanResult } from '@shared/types/library'
 
@@ -33,8 +33,10 @@ function sourceFromPath(filePath: string, outputFolder: string): LibraryTrack['s
 
 function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string | undefined {
   try {
+    // If a manually-set PNG cover exists, preserve it instead of overwriting with the ID3 JPEG extract
     const pngPath = join(cacheDir, `${trackId}.png`)
     if (existsSync(pngPath)) return pngPath
+
     const coverPath = join(cacheDir, `${trackId}.jpg`)
     writeFileSync(coverPath, coverData)
     return coverPath
@@ -53,12 +55,22 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
       const tags = await NodeID3.Promise.read(filePath)
       let coverPath: string | undefined
       const pic = (tags.image as any)
-      if (pic?.imageBuffer) {
+      if (pic && pic.imageBuffer) {
         coverPath = saveCover(pic.imageBuffer, cacheDir, id)
       }
+
+      // Fall back to cover.jpg sidecar in the same folder if no embedded cover
+      if (!coverPath) {
+        const sideCover = join(dirname(filePath), 'cover.jpg')
+        if (existsSync(sideCover)) coverPath = sideCover
+      }
+
       const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
+      const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
+
       return {
-        id, path: filePath,
+        id,
+        path: filePath,
         title: tags.title || basename(filePath, ext),
         artist: tags.artist || tags.performerInfo || 'Unknown Artist',
         album: tags.album || 'Unknown Album',
@@ -66,7 +78,7 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
         trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
         genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
         coverPath,
-        lrcPath: existsSync(lrcPath) ? lrcPath : undefined,
+        lrcPath: resolvedLrcPath,
         source,
       } satisfies LibraryTrack
     } catch {
@@ -89,15 +101,13 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
   } satisfies LibraryTrack
 }
 
-// Async scan that yields the main thread between each file so IPC stays responsive
+const BATCH = 5
+
 export async function scanLibrary(outputFolder: string, cacheDir: string): Promise<LibraryScanResult> {
   mkdirSync(cacheDir, { recursive: true })
   const files = walkDir(outputFolder)
   const tracks: LibraryTrack[] = []
 
-  // Process files concurrently in small batches so NodeID3 async reads
-  // don't queue up and still yield the event loop between batches
-  const BATCH = 5
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH)
     const results = await Promise.all(batch.map(f => processFile(f, outputFolder, cacheDir)))

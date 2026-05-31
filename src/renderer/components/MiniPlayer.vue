@@ -137,15 +137,6 @@ watch(() => player.currentTrack, (track) => {
   }
 })
 
-// Connect the audio element to the Web Audio engine on first play interaction
-watch(() => player.playing, (playing) => {
-  if (playing && audio.value && !audioConnected) {
-    connectAudioElement(audio.value)
-    audioConnected = true
-  }
-  if (playing) resumeContext()
-}, { flush: 'post' })
-
 onBeforeUnmount(() => {
   audio.value?.pause()
   if (sleepTick) clearInterval(sleepTick)
