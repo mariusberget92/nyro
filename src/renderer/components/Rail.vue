@@ -172,6 +172,8 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   padding: 14px 0 10px;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 
 /* ── Logo ─────────────────────────────────────── */
@@ -205,6 +207,10 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   gap: 2px;
   width: 100%;
   padding: 0 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 1;
+  min-height: 0;
 }
 
 .nav-btn {
@@ -272,7 +278,7 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
 }
 
 /* ── Bottom ───────────────────────────────────── */
-.spacer { flex: 1; }
+.spacer { flex: 1; min-height: 8px; }
 .rail-bottom {
   display: flex;
   flex-direction: column;
@@ -280,6 +286,7 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   gap: 8px;
   width: 100%;
   padding: 0 8px;
+  flex-shrink: 0;
 }
 
 /* ── Binary status pills ─────────────────────────── */
