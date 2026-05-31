@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import type { QueueItem } from '@shared/types/queue'
 import type { ViewMode } from '../stores/viewStore'
-import { useQueueStore, progressMap } from '../stores/queueStore'
+import { useQueueStore, getProgressRef } from '../stores/queueStore'
 
 const props = defineProps<{
   item: QueueItem
@@ -38,9 +38,10 @@ const duration = computed(() => {
   return `${m}:${s.toString().padStart(2, '0')}`
 })
 
-// Read live progress/status from the fast path map; fall back to item props
-const liveStatus   = computed(() => progressMap.value.get(props.item.id)?.status  ?? props.item.status)
-const liveProgress = computed(() => progressMap.value.get(props.item.id)?.progress ?? props.item.progress)
+// Each card subscribes only to its own shallowRef — no cross-card invalidation
+const progressRef  = getProgressRef(props.item.id)
+const liveStatus   = computed(() => progressRef.value?.status   ?? props.item.status)
+const liveProgress = computed(() => progressRef.value?.progress ?? props.item.progress)
 
 const pillColor = computed(() => {
   switch (liveStatus.value) {
@@ -121,7 +122,7 @@ const errorDetails = computed(() => {
   <!-- ── Row layout (List / Details) ── -->
   <div v-if="isRow" class="row-item" :class="{ 'row-item--selected': selected, 'row-item--details': viewMode === 'details' }" @click.stop="emit('toggleSelect', item.id)">
     <div class="row-thumb">
-      <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" />
+      <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" loading="lazy" decoding="async" />
       <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="thumb-placeholder">
         <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
       </svg>
@@ -171,7 +172,7 @@ const errorDetails = computed(() => {
   <div v-else class="card" :class="{ 'card--selected': selected }" @click.stop="emit('toggleSelect', item.id)">
     <!-- Thumbnail -->
     <div class="card-thumb">
-      <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" />
+      <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="title" loading="lazy" decoding="async" />
       <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="thumb-placeholder">
         <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
       </svg>
