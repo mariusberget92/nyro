@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, protocol, globalShortcut, Tray, Menu, nativeImage } from 'electron'
 import { join, extname } from 'path'
-import { createReadStream, statSync } from 'fs'
+import { createReadStream, statSync, existsSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
 import { checkAndUpdate } from './services/updater'
 import { IPC_CHANNELS } from '@shared/constants'
@@ -13,15 +13,23 @@ const MIME: Record<string, string> = {
 }
 
 function serveFile(filePath: string, rangeHeader: string | null): Response {
+  if (!existsSync(filePath)) return new Response('Not found', { status: 404 })
+
   const stat = statSync(filePath)
   const total = stat.size
   const mime = MIME[extname(filePath).slice(1).toLowerCase()] ?? 'application/octet-stream'
+  const isImage = mime.startsWith('image/')
+
+  // Images are content-addressed (MD5 hash filenames) — cache forever in browser
+  const cacheHeaders: Record<string, string> = isImage
+    ? { 'Cache-Control': 'public, max-age=31536000, immutable' }
+    : { 'Cache-Control': 'no-store' }
 
   const toWebStream = (start: number, end: number) => {
     const ns = createReadStream(filePath, { start, end })
     return new ReadableStream({
       start(ctrl) {
-        ns.on('data', chunk => ctrl.enqueue(chunk))
+        ns.on('data', chunk => ctrl.enqueue(chunk as Uint8Array))
         ns.on('end', () => ctrl.close())
         ns.on('error', err => ctrl.error(err))
       },
@@ -41,6 +49,7 @@ function serveFile(filePath: string, rangeHeader: string | null): Response {
           'Content-Length': String(end - start + 1),
           'Content-Range': `bytes ${start}-${end}/${total}`,
           'Accept-Ranges': 'bytes',
+          ...cacheHeaders,
         }
       })
     }
@@ -52,6 +61,7 @@ function serveFile(filePath: string, rangeHeader: string | null): Response {
       'Content-Type': mime,
       'Content-Length': String(total),
       'Accept-Ranges': 'bytes',
+      ...cacheHeaders,
     }
   })
 }

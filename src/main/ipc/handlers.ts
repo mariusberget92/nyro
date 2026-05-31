@@ -5,21 +5,22 @@ import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
 import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
+import type { LibraryScanResult } from '@shared/types/library'
 import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, unlinkSync, mkdirSync, copyFileSync } from 'fs'
 import { createHash } from 'crypto'
 import NodeID3 from 'node-id3'
 
-let libraryCache: ReturnType<typeof scanLibrary> | null = null
+let libraryCache: LibraryScanResult | null = null
 
 function libraryCachePath() {
   return join(app.getPath('userData'), 'library-cache.json')
 }
 
-function saveLibraryCache(result: ReturnType<typeof scanLibrary>) {
+function saveLibraryCache(result: LibraryScanResult) {
   try { writeFileSync(libraryCachePath(), JSON.stringify(result), 'utf8') } catch {}
 }
 
-function loadLibraryCache(): ReturnType<typeof scanLibrary> | null {
+function loadLibraryCache(): LibraryScanResult | null {
   try {
     const p = libraryCachePath()
     if (!existsSync(p)) return null
@@ -125,12 +126,12 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return queueManager.addPodcastEpisode(episodeId, outputFolder, showName)
   })
 
-  // library:scan — walk output folder, read ID3 tags
-  ipcMain.handle(IPC_CHANNELS.LIBRARY_SCAN, () => {
+  // library:scan — walk output folder, read ID3 tags (async to keep main thread responsive)
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_SCAN, async () => {
     const settings = loadSettings()
     if (!settings.outputFolder) throw new Error('No output folder set.')
     const cacheDir = join(app.getPath('userData'), 'covers')
-    libraryCache = scanLibrary(settings.outputFolder, cacheDir)
+    libraryCache = await scanLibrary(settings.outputFolder, cacheDir)
     saveLibraryCache(libraryCache)
     return libraryCache
   })

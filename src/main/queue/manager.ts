@@ -38,6 +38,36 @@ function saveFolderCover(folder: string, imgBuf: Buffer): void {
   }
 }
 
+function resolveOutputPath(item: QueueItem, settings: ReturnType<typeof loadSettings>): string | null {
+  const meta = item.metadata
+  if (!meta) return null
+
+  const baseFolder = item.outputFolder || settings.outputFolder
+  const isVideo = item.downloadMode === 'video'
+  const ext = isVideo ? 'mp4' : 'mp3'
+
+  if (isVideo) {
+    const filename = buildFilename({ title: meta.title, artist: meta.artist, settings })
+    return join(baseFolder, 'Videos', `${filename}.${ext}`)
+  }
+
+  let targetFolder = baseFolder
+  const effectiveAlbum = item.albumOverride || meta.album
+  if (effectiveAlbum) {
+    const safeAlbum = sanitizeFilenameComponent(effectiveAlbum)
+    const folderName = meta.year ? `${safeAlbum} (${meta.year})` : safeAlbum
+    targetFolder = join(baseFolder, 'Albums', folderName)
+  } else if (item.playlistTitle) {
+    targetFolder = join(baseFolder, 'Playlists', sanitizeFilenameComponent(item.playlistTitle))
+  } else {
+    const uploaderName = cleanUploader((meta as any).uploader || '')
+    if (uploaderName) targetFolder = join(baseFolder, 'Artists', sanitizeFilenameComponent(uploaderName))
+  }
+
+  const filename = buildFilename({ title: meta.title, artist: meta.artist, settings })
+  return join(targetFolder, `${filename}.${ext}`)
+}
+
 function moveFile(src: string, dest: string): void {
   try {
     renameSync(src, dest)
@@ -371,14 +401,20 @@ class QueueManager {
         return
       }
 
-      // Step 2: Write ID3 tags
+      // Step 2: Write ID3 tags (with thumbnail if available)
       this.updateItem(item.id, { status: 'tagging', progress: 95 })
       this.emitStatusChanged(item.id, 'tagging')
+
+      let podThumbBuf: Buffer | null = null
+      if (meta.thumbnailUrl) {
+        try { podThumbBuf = await fetchBuffer(meta.thumbnailUrl) } catch { /* non-fatal */ }
+      }
 
       await writeID3Tags(tempMp3, {
         title: meta.title,
         artist: meta.artist,
-        album: meta.album
+        album: meta.album,
+        thumbBuf: podThumbBuf ?? undefined,
       })
 
       // Step 3: Move to Podcasts/{showName}/
@@ -393,6 +429,10 @@ class QueueManager {
       const safeTitle = sanitizeFilenameComponent(meta.title)
       const finalPath = join(targetFolder, `${safeTitle}.mp3`)
       moveFile(tempMp3, finalPath)
+
+      if (podThumbBuf) {
+        saveFolderCover(targetFolder, podThumbBuf)
+      }
 
       this.updateItem(item.id, {
         status: 'completed',
@@ -421,6 +461,21 @@ class QueueManager {
 
     const settings = loadSettings()
     const tempDir = tmpdir()
+
+    // Skip if the file already exists at the expected output location
+    const expectedPath = resolveOutputPath(item, settings)
+    if (expectedPath && existsSync(expectedPath)) {
+      this.updateItem(item.id, {
+        status: 'completed',
+        progress: 100,
+        outputPath: expectedPath,
+        completedAt: Date.now(),
+        skipped: true,
+      })
+      this.emitStatusChanged(item.id, 'completed')
+      this.emitCompleted(item.id, expectedPath)
+      return
+    }
 
     const onProgress: ProgressCallback = (id, progress, status) => {
       this.updateItem(id, { progress, status })

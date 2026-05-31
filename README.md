@@ -4,8 +4,8 @@
 
 **A clean, fast desktop app for downloading music and podcasts — built for people who actually own their listening.**
 
-[![Release](https://img.shields.io/github/v/release/mariusberget92/nyro?style=flat-square&color=88c0d0)](https://github.com/mariusberget92/nyro/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-88c0d0?style=flat-square)](https://github.com/mariusberget92/nyro/releases)
+[![Release](https://img.shields.io/github/v/release/mariusberget92/nyro?style=flat-square&color=58a6ff)](https://github.com/mariusberget92/nyro/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-58a6ff?style=flat-square)](https://github.com/mariusberget92/nyro/releases)
 [![License](https://img.shields.io/github/license/mariusberget92/nyro?style=flat-square&color=a3be8c)](LICENSE)
 
 <br />
@@ -21,29 +21,35 @@
 ### 🎵 Download anything
 - **YouTube**, YouTube Music, **SoundCloud**, **Bandcamp**, **Vimeo**
 - Output as **MP3** (64–448 kbps, you pick) or **MP4** (4K / 1080p / 720p / 480p)
-- Titles, artists and album art are parsed automatically from video metadata
+- Titles, artists and album art parsed automatically — **cover art embedded** in ID3 tags and saved as `cover.jpg` per folder
 - Numbered filename prefixes with configurable templates (`{000} - `, `EP{00} - `, etc.)
+- **Duplicate detection** — tracks that already exist at the expected output path are skipped automatically
 
 ### 📋 Smart queue
 - Paste a single URL or an entire **playlist** — Nyro expands it automatically
-- Playlists are saved into their own named folder
+- Playlists saved into their own named folder; albums into `Albums/Name (Year)/`
 - Retry failed downloads, open the source URL, or get a plain-English explanation of what went wrong
 - Queue state persists across restarts
 
 ### 🎙️ Podcast browser
 - Powered by the **Taddy GraphQL API** — search, browse episodes, add to queue in one click
-- Podcast episodes are organised into their own `Podcasts / Show Name /` folder
-- Responses are cached for 6 hours to stretch the free-tier request limit
+- Podcast episodes organised into `Podcasts / Show Name /` with cover art embedded
+- Responses cached for 6 hours to stretch the free-tier request limit
 
 ### 📚 Media library
-- Scans your output folder on demand, reads **ID3 tags**, extracts cover art
-- Browse by **Albums**, **Artists**, **Podcasts**, or flat track/video lists
-- Scan results are persisted to disk — the library is available instantly on next launch
+- Scans your output folder on demand, reads **ID3 tags**, extracts and caches cover art
+- Browse by **Albums** (grouped by name, Various Artists for mixed), **Artists**, **Podcasts**, flat **Tracks**, or **Videos**
+- Create custom **Playlists**, set manual covers, drag to reorder
+- Scan results persisted to disk — library available instantly on next launch
 
-### 🎧 Mini player
-- Built-in audio player with **shuffle**, **repeat**, **repeat one**
+### 🎧 Mini player + audio engine
+- Built-in player with **shuffle**, **repeat**, **repeat-one**, playback speed control
 - Scrub bar with click-to-seek
-- **Synced lyrics** — fetched automatically from [lrclib.net](https://lrclib.net) and saved as `.lrc` sidecars, displayed karaoke-style in the player
+- **Synced lyrics** fetched from [lrclib.net](https://lrclib.net), saved as `.lrc` sidecars, displayed karaoke-style
+- **10-band graphic EQ** with preamp and frequency response curve
+- **4-band multiband compressor** with per-band threshold, ratio, attack, release and makeup gain
+- **FX chain:** bass boost, treble enhance, stereo widener (M/S), reverb, crossfeed, limiter
+- **Play history** page
 
 ### 🔐 Cookie authentication
 - **Method A (recommended):** import a `cookies.txt` file exported from your browser — works while Chrome is open
@@ -165,19 +171,24 @@ The free tier gives 300 requests/month. Nyro caches responses for 6 hours to kee
 📁 Music/Nyro/
 ├── 📁 Albums/
 │   └── 📁 Album Name (2024)/
+│       ├── cover.jpg
 │       ├── 001 - Artist – Track.mp3
+│       ├── 001 - Artist – Track.lrc
 │       └── 002 - Artist – Track.mp3
 ├── 📁 Playlists/
 │   └── 📁 My Playlist/
-│       ├── 001 - Artist – Song.mp3
-│       └── 002 - Artist – Song.mp3
+│       ├── cover.jpg
+│       └── 001 - Artist – Song.mp3
 ├── 📁 Podcasts/
 │   └── 📁 Show Name/
+│       ├── cover.jpg
 │       └── Episode Title.mp3
+├── 📁 Videos/
+│   └── Artist – Video Title.mp4
 └── Artist – Standalone Track.mp3
 ```
 
-Lyrics (when available) are saved as `.lrc` sidecar files next to each audio file and displayed in the mini player.
+Lyrics (when available) are saved as `.lrc` sidecar files next to each audio file and displayed in the mini player. Cover art is embedded in ID3 tags **and** saved as `cover.jpg` per folder so it survives any tag editor.
 
 ---
 
@@ -189,9 +200,10 @@ Lyrics (when available) are saved as `.lrc` sidecar files next to each audio fil
 | Frontend | [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) + [Vue Router 4](https://router.vuejs.org/) |
 | Build | [electron-vite](https://electron-vite.org/) + [Tailwind CSS](https://tailwindcss.com/) |
 | Downloads | [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases) + [FFmpeg](https://ffmpeg.org/) |
-| Tag reading | [node-id3](https://github.com/Zazama/node-id3) |
+| Tag reading/writing | [node-id3](https://github.com/Zazama/node-id3) |
 | Lyrics | [lrclib.net](https://lrclib.net) API |
 | Podcasts | [Taddy GraphQL API](https://taddy.org/developers/intro-to-taddy-graphql-api) |
+| Audio engine | Web Audio API (EQ, multiband compressor, FX chain) |
 | Settings | [electron-store](https://github.com/sindresorhus/electron-store) |
 
 ---

@@ -4,36 +4,36 @@
 
 @layer base {
   :root {
-    /* ── Backgrounds — lifted ~18 pts for a warmer mid-dark feel ── */
-    --bg-canvas: #181c24;
-    --bg-0:      #1c2030;
-    --bg-1:      #222840;
-    --bg-2:      #293050;
-    --bg-3:      #30385c;
-    --bg-4:      #384068;
+    /* ── Backgrounds — GitHub-dark inspired flat palette ── */
+    --bg-canvas: #161b22;
+    --bg-0:      #1c2128;
+    --bg-1:      #22272e;
+    --bg-2:      #2d333b;
+    --bg-3:      #373e47;
+    --bg-4:      #444c56;
 
-    /* ── Text — brighter main, readable dim, visible faint ── */
-    --tx:        #e8edf6;
-    --tx-dim:    #a0abbe;
-    --tx-faint:  #6b7a96;
+    /* ── Text — high readability ── */
+    --tx:        #e6edf3;
+    --tx-dim:    #adbac7;
+    --tx-faint:  #768390;
 
     /* ── Lines ── */
     --line:      rgba(255,255,255,0.08);
     --line-2:    rgba(255,255,255,0.14);
 
-    /* ── Accent (Nord frost) ── */
-    --accent:         #88c0d0;
-    --accent-2:       #81a1c1;
-    --accent-glow:    rgba(136,192,208,0.10);
-    --accent-glow-strong: rgba(136,192,208,0.20);
+    /* ── Accent — GitHub blue ── */
+    --accent:              #58a6ff;
+    --accent-2:            #79c0ff;
+    --accent-glow:         rgba(88,166,255,0.10);
+    --accent-glow-strong:  rgba(88,166,255,0.20);
 
-    --ok:   #a3be8c;
-    --warn: #ebcb8b;
-    --bad:  #bf616a;
-    --conv: #b48ead;
+    --ok:   #3fb950;
+    --warn: #d29922;
+    --bad:  #f85149;
+    --conv: #bc8cff;
 
-    --radius: 7px;
-    --rail-w: 76px;
+    --radius: 8px;
+    --rail-w: 96px;
   }
 
   * { box-sizing: border-box; }
@@ -43,7 +43,7 @@
     margin: 0;
     padding: 0;
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14.5px;
+    font-size: 14px;
   }
 
   body {
@@ -57,7 +57,7 @@
   ::-webkit-scrollbar        { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track  { background: transparent; }
   ::-webkit-scrollbar-thumb  {
-    background: rgba(136,192,208,0.35);
+    background: rgba(88,166,255,0.30);
     border-radius: 2px;
   }
 
@@ -69,7 +69,7 @@
 
   /* ── Selection ─────────────────────────────────────── */
   ::selection {
-    background: rgba(136, 192, 208, 0.25);
+    background: rgba(88, 166, 255, 0.25);
     color: var(--tx);
   }
 }

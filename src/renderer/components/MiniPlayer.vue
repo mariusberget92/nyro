@@ -116,15 +116,6 @@ onMounted(() => {
   sleepTick = setInterval(() => player.tickSleepTimer(), 5000)
 })
 
-// Connect the audio element to the Web Audio engine on first play interaction
-watch(() => player.playing, (playing) => {
-  if (playing && audio.value && !audioConnected) {
-    connectAudioElement(audio.value)
-    audioConnected = true
-  }
-  if (playing) resumeContext()
-}, { flush: 'post' })
-
 // System notification + play history on track change
 let lastNotifiedPath = ''
 watch(() => player.currentTrack, (track) => {

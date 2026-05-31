@@ -55,6 +55,24 @@ function totalDuration(pl: CustomPlaylist) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+// ── Cover picker ────────────────────────────────────────
+async function pickCover(pl: CustomPlaylist, e: Event) {
+  e.stopPropagation()
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const imagePath = (file as any).path
+    if (!imagePath) return
+    const coverPath = await window.nyro.invoke<string>('library:set-cover', pl.tracks[0]?.path ?? '', imagePath)
+    plStore.setCover(pl.id, coverPath || imagePath)
+    if (selected.value?.id === pl.id) selected.value = { ...selected.value!, coverPath: coverPath || imagePath }
+  }
+  input.click()
+}
+
 // ── CRUD ────────────────────────────────────────────────
 function openCreate() {
   editingPl.value = null
@@ -151,9 +169,10 @@ function onDrop(toIdx: number) {
             class="pl-card" :class="{ active: selected?.id === pl.id }"
             @click="selected = selected?.id === pl.id ? null : pl"
           >
-            <!-- Cover mosaic (first 4 track covers) -->
+            <!-- Cover: manual override → mosaic → icon -->
             <div class="pl-art">
-              <template v-if="pl.tracks.some(t => t.coverPath)">
+              <div v-if="pl.coverPath" class="pl-art-single" :style="{ backgroundImage: `url('${coverUrl(pl.coverPath)}')` }" />
+              <template v-else-if="pl.tracks.some(t => t.coverPath)">
                 <div class="mosaic">
                   <div
                     v-for="(t, i) in pl.tracks.filter(t => t.coverPath).slice(0, 4)" :key="i"
@@ -171,6 +190,13 @@ function onDrop(toIdx: number) {
               <div class="pl-art-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
+              <button class="cover-upload-btn" title="Set cover" @click.stop="pickCover(pl, $event)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </button>
             </div>
             <div class="pl-card-label-row">
               <span class="pl-card-name">{{ pl.name }}</span>
@@ -199,8 +225,9 @@ function onDrop(toIdx: number) {
       <Transition name="detail">
         <div v-if="selected" class="detail-panel">
           <div class="detail-header">
-            <div class="detail-art">
-              <div v-if="selected.tracks.some(t => t.coverPath)" class="mosaic mosaic--lg">
+            <div class="detail-art" style="cursor:pointer" @click="pickCover(selected, $event)">
+              <div v-if="selected.coverPath" class="pl-art-single pl-art-single--lg" :style="{ backgroundImage: `url('${coverUrl(selected.coverPath)}')` }" />
+              <div v-else-if="selected.tracks.some(t => t.coverPath)" class="mosaic mosaic--lg">
                 <div
                   v-for="(t, i) in selected.tracks.filter(t => t.coverPath).slice(0, 4)" :key="i"
                   class="mosaic-cell"
@@ -373,12 +400,12 @@ function onDrop(toIdx: number) {
 .create-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 12px; height: 30px; border-radius: 8px;
-  border: 1px solid rgba(136,192,208,0.3);
-  background: linear-gradient(135deg, rgba(136,192,208,0.12), rgba(136,192,208,0.06));
+  border: 1px solid rgba(88,166,255,0.3);
+  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.06));
   color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer;
   transition: box-shadow 0.15s;
 }
-.create-btn:hover { box-shadow: 0 0 10px rgba(136,192,208,0.25); }
+.create-btn:hover { box-shadow: 0 0 10px rgba(88,166,255,0.25); }
 
 /* ── Body ────────────────────────────────────────────── */
 .pl-body { flex: 1; display: flex; overflow: hidden; }
@@ -439,6 +466,23 @@ function onDrop(toIdx: number) {
 .mosaic { display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; }
 .mosaic-cell { background: var(--bg-3) center/cover no-repeat; }
 .mosaic--lg { width: 110px; height: 110px; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+
+.pl-art-single {
+  width: 100%; height: 100%; border-radius: inherit;
+  background: center/cover no-repeat;
+}
+.pl-art-single--lg { width: 110px; height: 110px; border-radius: 10px; flex-shrink: 0; }
+
+.cover-upload-btn {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 6px;
+  border: none; background: rgba(0,0,0,0.55);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s; z-index: 3;
+}
+.pl-art:hover .cover-upload-btn { opacity: 1; }
+.cover-upload-btn:hover { background: rgba(88,166,255,0.55); }
+
 .pl-art-overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.45);
@@ -495,7 +539,7 @@ function onDrop(toIdx: number) {
   transition: box-shadow 0.15s;
 }
 .play-all-btn:disabled { opacity: 0.4; cursor: default; }
-.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(136,192,208,0.4); }
+.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(88,166,255,0.4); }
 .add-tracks-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px; border-radius: 20px;
@@ -516,7 +560,7 @@ function onDrop(toIdx: number) {
   transition: background 0.1s;
 }
 .track-row:hover { background: var(--bg-2); }
-.track-row.playing { background: rgba(136,192,208,0.08); }
+.track-row.playing { background: var(--accent-glow); }
 .track-row.playing .tr-title { color: var(--accent); }
 .drag-handle {
   color: var(--tx-faint); cursor: grab; flex-shrink: 0; opacity: 0.4;
@@ -536,7 +580,7 @@ function onDrop(toIdx: number) {
   padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
 }
-.tr-source.music   { background: rgba(136,192,208,0.12); color: var(--accent); }
+.tr-source.music   { background: var(--accent-glow); color: var(--accent); }
 .tr-source.podcast { background: rgba(163,190,140,0.12); color: var(--ok); }
 .tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
 .remove-track-btn {
@@ -609,7 +653,7 @@ function onDrop(toIdx: number) {
   transition: background 0.1s;
 }
 .picker-row:hover { background: var(--bg-2); }
-.picker-row.checked { background: rgba(136,192,208,0.08); }
+.picker-row.checked { background: var(--accent-glow); }
 .picker-check {
   width: 18px; height: 18px; border-radius: 5px;
   border: 1.5px solid var(--line-2); flex-shrink: 0;

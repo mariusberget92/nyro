@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted, onActivated } from 'vue'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
 import { useViewStore } from '../stores/viewStore'
@@ -9,6 +9,10 @@ import type { LibraryAlbum, LibraryArtist, LibraryTrack } from '@shared/types/li
 const lib    = useLibraryStore()
 const player = usePlayerStore()
 const views  = useViewStore()
+
+// Load tracks on first mount; also re-check when navigating back via KeepAlive
+onMounted(() => { if (lib.tracks.length === 0) lib.load() })
+onActivated(() => { if (lib.tracks.length === 0) lib.load() })
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
@@ -131,6 +135,50 @@ const detailArtist = computed((): LibraryArtist | null => {
 // ── File reveal ──────────────────────────────────────────
 function revealFile(path: string) {
   window.nyro.invoke('shell:show-in-folder', path)
+}
+
+// ── Selection mode ────────────────────────────────────────
+const selectionMode = ref(false)
+const selectedAlbums = ref<Set<LibraryAlbum>>(new Set())
+const selectedTracks = ref<Set<LibraryTrack>>(new Set())
+
+const selectedCount = computed(() => selectedAlbums.value.size + selectedTracks.value.size)
+
+function isAlbumSelected(album: LibraryAlbum) { return selectedAlbums.value.has(album) }
+function isTrackSelected(track: LibraryTrack) { return selectedTracks.value.has(track) }
+
+function toggleAlbum(album: LibraryAlbum) {
+  const next = new Set(selectedAlbums.value)
+  if (next.has(album)) next.delete(album)
+  else next.add(album)
+  selectedAlbums.value = next
+}
+function toggleTrack(track: LibraryTrack) {
+  const next = new Set(selectedTracks.value)
+  if (next.has(track)) next.delete(track)
+  else next.add(track)
+  selectedTracks.value = next
+}
+
+function clearSelection() {
+  selectedAlbums.value = new Set()
+  selectedTracks.value = new Set()
+}
+
+function selectAll() {
+  if (view.value === 'albums') selectedAlbums.value = new Set(filteredAlbums.value)
+  else if (view.value === 'podcasts') selectedAlbums.value = new Set(filteredPodcasts.value)
+  else if (view.value === 'tracks') selectedTracks.value = new Set(filteredTracks.value)
+  else if (view.value === 'videos') selectedTracks.value = new Set(filteredVideos.value)
+}
+
+async function deleteSelected() {
+  const paths: string[] = []
+  for (const album of selectedAlbums.value) paths.push(...album.tracks.map(t => t.path))
+  for (const track of selectedTracks.value) paths.push(track.path)
+  if (!paths.length) return
+  await lib.deleteTracks(paths)
+  clearSelection()
 }
 
 // ── Create folder ─────────────────────────────────────────
@@ -319,29 +367,6 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
                 </button>
               </template>
             </div>
-            <div class="card-label-row">
-              <template v-if="renaming === album">
-                <input
-                  ref="renameInputEl"
-                  v-model="renameVal"
-                  class="rename-input"
-                  @keydown.enter.stop="commitRename(album)"
-                  @keydown.escape.stop="cancelRename"
-                  @blur="commitRename(album)"
-                  @click.stop
-                />
-                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
-              </template>
-              <template v-else>
-                <span class="card-name">{{ album.name }}</span>
-                <button class="rename-btn" title="Rename folder" @click.stop="startRename(album, $event)">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-              </template>
-            </div>
             <span class="card-sub">{{ album.artist }}{{ album.year ? ` · ${album.year}` : '' }}</span>
           </div>
         </div>
@@ -390,29 +415,6 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
                   <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
                 </svg>
               </button>
-            </div>
-            <div class="card-label-row">
-              <template v-if="renaming === show">
-                <input
-                  ref="renameInputEl"
-                  v-model="renameVal"
-                  class="rename-input"
-                  @keydown.enter.stop="commitRename(show)"
-                  @keydown.escape.stop="cancelRename"
-                  @blur="commitRename(show)"
-                  @click.stop
-                />
-                <span v-if="renameError" class="rename-error">{{ renameError }}</span>
-              </template>
-              <template v-else>
-                <span class="card-name">{{ show.name }}</span>
-                <button class="rename-btn" title="Rename folder" @click.stop="startRename(show, $event)">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-              </template>
             </div>
             <div class="card-label-row">
               <template v-if="renaming === show">
@@ -743,8 +745,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .scan-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 12px; height: 30px; border-radius: 8px;
-  border: 1px solid rgba(136,192,208,0.3);
-  background: linear-gradient(135deg, rgba(136,192,208,0.12), rgba(136,192,208,0.06));
+  border: 1px solid rgba(88,166,255,0.3);
+  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(88,166,255,0.06));
   color: var(--accent); font-size: 12px; font-weight: 600;
   font-family: 'JetBrains Mono', monospace; cursor: pointer;
   transition: box-shadow 0.15s;
@@ -844,7 +846,7 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   z-index: 2;
 }
 .card-art:hover .cover-upload-btn { opacity: 1; }
-.cover-upload-btn:hover { background: rgba(136,192,208,0.4); }
+.cover-upload-btn:hover { background: rgba(88,166,255,0.4); }
 .card-name { display: block; font-size: 13px; font-weight: 600; color: var(--tx); margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub  { display: block; font-size: 11.5px; color: var(--tx-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

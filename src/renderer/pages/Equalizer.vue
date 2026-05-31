@@ -46,7 +46,7 @@ function drawCurve() {
   ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke()
 
   if (!eqSettings.enabled) {
-    ctx.strokeStyle = 'rgba(136,192,208,0.3)'
+    ctx.strokeStyle = 'var(--accent-glow)'
     ctx.lineWidth = 1.5
     ctx.setLineDash([4, 4])
     ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke()
@@ -55,9 +55,9 @@ function drawCurve() {
   }
 
   const grad = ctx.createLinearGradient(0, 0, 0, H)
-  grad.addColorStop(0,   'rgba(136,192,208,0.3)')
-  grad.addColorStop(0.5, 'rgba(136,192,208,0.06)')
-  grad.addColorStop(1,   'rgba(136,192,208,0)')
+  grad.addColorStop(0,   'var(--accent-glow)')
+  grad.addColorStop(0.5, 'rgba(88,166,255,0.06)')
+  grad.addColorStop(1,   'rgba(88,166,255,0)')
 
   ctx.beginPath()
   for (let i = 0; i < N; i++) {
@@ -549,7 +549,7 @@ function ratioLabel(r: number) { return r >= 20 ? '∞:1' : `${r}:1` }
   width: 16px; height: 16px; border-radius: 50%;
   background: var(--accent); border: 2px solid var(--bg-1);
   cursor: ns-resize; transition: transform 0.1s;
-  box-shadow: 0 0 8px rgba(136,192,208,0.5);
+  box-shadow: 0 0 8px var(--accent-glow-strong);
   margin-top: -8px; z-index: 2;
 }
 .band-label {
@@ -578,7 +578,7 @@ function ratioLabel(r: number) { return r >= 20 ? '∞:1' : `${r}:1` }
 .h-slider::-webkit-slider-thumb {
   -webkit-appearance: none; width: 14px; height: 14px;
   border-radius: 50%; background: var(--accent); cursor: pointer;
-  box-shadow: 0 0 6px rgba(136,192,208,0.4);
+  box-shadow: 0 0 6px var(--accent-glow-strong);
 }
 
 /* ── Compressor grid ────────────────────── */
@@ -612,7 +612,7 @@ function ratioLabel(r: number) { return r >= 20 ? '∞:1' : `${r}:1` }
   -webkit-appearance: none; width: 13px; height: 13px;
   border-radius: 50%; background: var(--accent);
   border: 2px solid var(--bg-1); margin-left: -5px;
-  box-shadow: 0 0 5px rgba(136,192,208,0.4);
+  box-shadow: 0 0 5px var(--accent-glow-strong);
 }
 .mb-param span {
   font-size: 9px; color: var(--tx-dim);
@@ -632,11 +632,11 @@ function ratioLabel(r: number) { return r >= 20 ? '∞:1' : `${r}:1` }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.bass-icon    { background: rgba(136,192,208,0.12); color: var(--accent); }
+.bass-icon    { background: var(--accent-glow); color: var(--accent); }
 .treble-icon  { background: rgba(163,190,140,0.12); color: var(--ok); }
 .stereo-icon  { background: rgba(180,142,173,0.12); color: var(--conv); }
 .reverb-icon  { background: rgba(235,203,139,0.12); color: var(--warn); }
-.cf-icon      { background: rgba(136,192,208,0.12); color: var(--accent-2); }
+.cf-icon      { background: var(--accent-glow); color: var(--accent-2); }
 .limiter-icon { background: rgba(191,97,106,0.12);  color: var(--bad); }
 .fx-name { font-size: 13px; font-weight: 700; color: var(--tx); }
 .fx-controls { display: flex; flex-direction: column; gap: 0; }
