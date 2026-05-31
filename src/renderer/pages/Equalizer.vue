@@ -57,7 +57,7 @@ function drawCurve() {
   const grad = ctx.createLinearGradient(0, 0, 0, H)
   grad.addColorStop(0,   'var(--accent-glow)')
   grad.addColorStop(0.5, 'rgba(88,166,255,0.06)')
-  grad.addColorStop(1,   'rgba(136,192,208,0)')
+  grad.addColorStop(1,   'rgba(88,166,255,0)')
 
   ctx.beginPath()
   for (let i = 0; i < N; i++) {

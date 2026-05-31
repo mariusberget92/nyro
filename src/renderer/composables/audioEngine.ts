@@ -42,7 +42,7 @@ export interface MbBandDef {
 }
 
 export const MB_BANDS: MbBandDef[] = [
-  { label: 'Low',      color: '#88c0d0', crossLow: null, crossHigh: 250  },
+  { label: 'Low',      color: '#58a6ff', crossLow: null, crossHigh: 250  },
   { label: 'Low-Mid',  color: '#a3be8c', crossLow: 250,  crossHigh: 2000 },
   { label: 'High-Mid', color: '#ebcb8b', crossLow: 2000, crossHigh: 8000 },
   { label: 'High',     color: '#b48ead', crossLow: 8000, crossHigh: null },

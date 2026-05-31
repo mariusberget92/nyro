@@ -495,7 +495,7 @@ function onDrop(toIdx: number) {
   transition: box-shadow 0.15s;
 }
 .play-all-btn:disabled { opacity: 0.4; cursor: default; }
-.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(136,192,208,0.4); }
+.play-all-btn:not(:disabled):hover { box-shadow: 0 0 14px rgba(88,166,255,0.4); }
 .add-tracks-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px; border-radius: 20px;
@@ -516,7 +516,7 @@ function onDrop(toIdx: number) {
   transition: background 0.1s;
 }
 .track-row:hover { background: var(--bg-2); }
-.track-row.playing { background: rgba(136,192,208,0.08); }
+.track-row.playing { background: var(--accent-glow); }
 .track-row.playing .tr-title { color: var(--accent); }
 .drag-handle {
   color: var(--tx-faint); cursor: grab; flex-shrink: 0; opacity: 0.4;
@@ -536,7 +536,7 @@ function onDrop(toIdx: number) {
   padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
 }
-.tr-source.music   { background: rgba(136,192,208,0.12); color: var(--accent); }
+.tr-source.music   { background: var(--accent-glow); color: var(--accent); }
 .tr-source.podcast { background: rgba(163,190,140,0.12); color: var(--ok); }
 .tr-dur { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--tx-faint); flex-shrink: 0; }
 .remove-track-btn {
@@ -609,7 +609,7 @@ function onDrop(toIdx: number) {
   transition: background 0.1s;
 }
 .picker-row:hover { background: var(--bg-2); }
-.picker-row.checked { background: rgba(136,192,208,0.08); }
+.picker-row.checked { background: var(--accent-glow); }
 .picker-check {
   width: 18px; height: 18px; border-radius: 5px;
   border: 1.5px solid var(--line-2); flex-shrink: 0;

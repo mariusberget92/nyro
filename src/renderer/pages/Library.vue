@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onActivated } from 'vue'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
 import { useViewStore } from '../stores/viewStore'
@@ -10,7 +10,9 @@ const lib    = useLibraryStore()
 const player = usePlayerStore()
 const views  = useViewStore()
 
+// Load tracks on first mount; also re-check when navigating back via KeepAlive
 onMounted(() => { if (lib.tracks.length === 0) lib.load() })
+onActivated(() => { if (lib.tracks.length === 0) lib.load() })
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')

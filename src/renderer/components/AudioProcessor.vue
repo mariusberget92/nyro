@@ -84,7 +84,7 @@ function drawCurve() {
 
   if (!eqSettings.enabled) {
     // When disabled, draw a flat line at 0dB
-    ctx.strokeStyle = 'rgba(136,192,208,0.3)'
+    ctx.strokeStyle = 'rgba(88,166,255,0.3)'
     ctx.lineWidth   = 1.5
     ctx.setLineDash([4, 4])
     ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(W, midY); ctx.stroke()
@@ -94,9 +94,9 @@ function drawCurve() {
 
   // Response curve fill
   const grad = ctx.createLinearGradient(0, 0, 0, H)
-  grad.addColorStop(0,   'rgba(136,192,208,0.35)')
-  grad.addColorStop(0.5, 'rgba(136,192,208,0.08)')
-  grad.addColorStop(1,   'rgba(136,192,208,0.0)')
+  grad.addColorStop(0,   'rgba(88,166,255,0.35)')
+  grad.addColorStop(0.5, 'rgba(88,166,255,0.08)')
+  grad.addColorStop(1,   'rgba(88,166,255,0.0)')
 
   ctx.beginPath()
   for (let i = 0; i < N; i++) {
@@ -431,7 +431,7 @@ function ratioLabel(r: number) {
   border: 2px solid var(--bg-1);
   cursor: ns-resize;
   transition: transform 0.1s;
-  box-shadow: 0 0 6px rgba(136,192,208,0.4);
+  box-shadow: 0 0 6px rgba(88,166,255,0.4);
   margin-top: -7px;
   z-index: 2;
 }
@@ -530,7 +530,7 @@ function ratioLabel(r: number) {
   -webkit-appearance: none; width: 12px; height: 12px;
   border-radius: 50%; background: var(--accent);
   border: 2px solid var(--bg-1); margin-left: -4.5px;
-  box-shadow: 0 0 4px rgba(136,192,208,0.4);
+  box-shadow: 0 0 4px rgba(88,166,255,0.4);
 }
 .mb-param span {
   font-size: 9px; color: var(--tx-dim);

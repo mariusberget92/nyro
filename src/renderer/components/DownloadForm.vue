@@ -269,7 +269,7 @@ function onKeydown(e: KeyboardEvent) {
 .folder-badge {
   flex-shrink: 0; font-size: 9px; font-weight: 700;
   padding: 1px 5px; border-radius: 3px;
-  background: rgba(136,192,208,0.15); color: var(--accent);
+  background: var(--accent-glow); color: var(--accent);
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .folder-btn {
