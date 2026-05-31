@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, protocol } from 'electron'
+import { app, BrowserWindow, shell, protocol, globalShortcut } from 'electron'
 import { join, extname } from 'path'
 import { createReadStream, statSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
@@ -144,11 +144,22 @@ app.whenReady().then(() => {
 
   createWindow()
 
+  // System-wide media key bindings
+  const send = (ch: string) => mainWindow?.webContents.send(ch)
+  globalShortcut.register('MediaPlayPause',  () => send('media:playpause'))
+  globalShortcut.register('MediaNextTrack',  () => send('media:next'))
+  globalShortcut.register('MediaPreviousTrack', () => send('media:prev'))
+  globalShortcut.register('MediaStop',       () => send('media:stop'))
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
     }
   })
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 app.on('second-instance', () => {

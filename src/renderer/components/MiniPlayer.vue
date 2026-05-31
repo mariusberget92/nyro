@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { usePlayerStore } from '../stores/playerStore'
+import AudioProcessor from './AudioProcessor.vue'
+import { connectAudioElement, resumeContext } from '../composables/audioEngine'
 
 const player = usePlayerStore()
 const audio = ref<HTMLAudioElement | null>(null)
 const showSleepPicker = ref(false)
+const showEq = ref(false)
+let audioConnected = false
 const sleepCustomMin = ref(30)
 
 // Sleep timer display — remaining time as "Xh Ym" or "Xm"
@@ -94,6 +98,15 @@ onMounted(() => {
   sleepTick = setInterval(() => player.tickSleepTimer(), 5000)
 })
 
+// Connect the audio element to the Web Audio engine on first play interaction
+watch(() => player.playing, (playing) => {
+  if (playing && audio.value && !audioConnected) {
+    connectAudioElement(audio.value)
+    audioConnected = true
+  }
+  if (playing) resumeContext()
+}, { flush: 'post' })
+
 onBeforeUnmount(() => {
   audio.value?.pause()
   if (sleepTick) clearInterval(sleepTick)
@@ -108,6 +121,11 @@ onBeforeUnmount(() => {
       @loadedmetadata="onLoadedMetadata"
       @ended="onEnded"
     />
+
+    <!-- EQ / Compressor panel (slides up) -->
+    <Transition name="lyrics-slide">
+      <AudioProcessor v-if="showEq" />
+    </Transition>
 
     <!-- Lyrics panel (slides up) -->
     <Transition name="lyrics-slide">
@@ -181,6 +199,18 @@ onBeforeUnmount(() => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 4 15 12 5 20 5 4"/>
             <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+
+        <!-- EQ -->
+        <button class="ctrl-btn" :class="{ active: showEq }" title="Equalizer / Compressor" @click="showEq = !showEq">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="4"  y1="21" x2="4"  y2="14"/><line x1="4"  y1="10" x2="4"  y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8"  x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1"  y1="14" x2="7"  y2="14"/>
+            <line x1="9"  y1="8"  x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
           </svg>
         </button>
 
