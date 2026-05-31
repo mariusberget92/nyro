@@ -68,12 +68,18 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
       const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
       const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
 
+      // For podcasts, fall back to the immediate parent folder name (the show folder)
+      // rather than "Unknown Album" so episodes always group under their show.
+      const fallbackAlbum = source === 'podcast'
+        ? basename(dirname(filePath))
+        : 'Unknown Album'
+
       return {
         id,
         path: filePath,
         title: tags.title || basename(filePath, ext),
         artist: tags.artist || tags.performerInfo || 'Unknown Artist',
-        album: tags.album || 'Unknown Album',
+        album: tags.album || fallbackAlbum,
         year: tags.year ? parseInt(tags.year) : undefined,
         trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
         genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
@@ -82,11 +88,14 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
         source,
       } satisfies LibraryTrack
     } catch {
+      const catchFallbackAlbum = source === 'podcast'
+        ? basename(dirname(filePath))
+        : 'Unknown Album'
       return {
         id, path: filePath,
         title: basename(filePath, ext),
         artist: 'Unknown Artist',
-        album: 'Unknown Album',
+        album: catchFallbackAlbum,
         source,
       } satisfies LibraryTrack
     }

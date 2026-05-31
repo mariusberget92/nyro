@@ -152,6 +152,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     const parent = join(oldPath, '..')
     const newPath = join(parent, newName)
     if (!existsSync(oldPath)) throw new Error('Folder not found: ' + oldPath)
+    // No-op: renaming to the same name (exact match or case-only change on case-insensitive FS)
+    if (oldPath === newPath || oldPath.toLowerCase() === newPath.toLowerCase()) return newPath
     if (existsSync(newPath)) throw new Error('A folder with that name already exists.')
     renameSync(oldPath, newPath)
     // Patch in-memory cache so the library reflects the rename without a full rescan
