@@ -84,6 +84,11 @@ export const useLibraryStore = defineStore('library', {
         this.scannedAt = result.scannedAt
       }
     },
+    async deleteTracks(paths: string[]): Promise<void> {
+      await window.nyro.invoke('library:delete-tracks', paths)
+      const pathSet = new Set(paths)
+      this.tracks = this.tracks.filter(t => !pathSet.has(t.path))
+    },
     async setCover(trackPath: string, imagePath: string): Promise<string> {
       const coverPath = await window.nyro.invoke<string>('library:set-cover', trackPath, imagePath)
       const track = this.tracks.find(t => t.path === trackPath)

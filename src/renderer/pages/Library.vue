@@ -12,6 +12,74 @@ const view       = ref<View>('albums')
 const selected   = ref<LibraryAlbum | LibraryArtist | null>(null)
 const searchQ    = ref('')
 
+// ── Bulk selection ────────────────────────────────────────
+// Stores track paths (for track/video views) or album keys (for album/podcast views)
+const selectionMode = ref(false)
+const selectedKeys  = ref(new Set<string>())
+
+function albumKey(a: LibraryAlbum) { return `${a.name}__${a.artist}` }
+
+function toggleAlbum(album: LibraryAlbum) {
+  const k = albumKey(album)
+  const s = new Set(selectedKeys.value)
+  if (s.has(k)) s.delete(k); else s.add(k)
+  selectedKeys.value = s
+}
+function toggleTrack(track: LibraryTrack) {
+  const s = new Set(selectedKeys.value)
+  if (s.has(track.path)) s.delete(track.path); else s.add(track.path)
+  selectedKeys.value = s
+}
+
+function isAlbumSelected(album: LibraryAlbum) { return selectedKeys.value.has(albumKey(album)) }
+function isTrackSelected(track: LibraryTrack)  { return selectedKeys.value.has(track.path) }
+
+const currentItems = computed((): LibraryAlbum[] | LibraryTrack[] => {
+  if (view.value === 'albums')   return filteredAlbums.value
+  if (view.value === 'podcasts') return filteredPodcasts.value
+  if (view.value === 'tracks')   return filteredTracks.value
+  if (view.value === 'videos')   return filteredVideos.value
+  return []
+})
+
+function selectAll() {
+  if (view.value === 'albums' || view.value === 'podcasts') {
+    selectedKeys.value = new Set((currentItems.value as LibraryAlbum[]).map(albumKey))
+  } else {
+    selectedKeys.value = new Set((currentItems.value as LibraryTrack[]).map(t => t.path))
+  }
+}
+
+function clearSelection() {
+  selectedKeys.value = new Set()
+  selectionMode.value = false
+}
+
+const selectedCount = computed(() => selectedKeys.value.size)
+
+async function deleteSelected() {
+  if (!selectedCount.value) return
+  const paths: string[] = []
+  if (view.value === 'albums' || view.value === 'podcasts') {
+    const albums = currentItems.value as LibraryAlbum[]
+    for (const a of albums) {
+      if (selectedKeys.value.has(albumKey(a))) paths.push(...a.tracks.map(t => t.path))
+    }
+  } else {
+    for (const p of selectedKeys.value) paths.push(p)
+  }
+  if (!paths.length) return
+  const noun = view.value === 'albums' || view.value === 'podcasts'
+    ? `${selectedCount.value} album${selectedCount.value !== 1 ? 's' : ''} (${paths.length} file${paths.length !== 1 ? 's' : ''})`
+    : `${paths.length} file${paths.length !== 1 ? 's' : ''}`
+  if (!confirm(`Delete ${noun} from disk? This cannot be undone.`)) return
+  if (selected.value && paths.some(p => (selected.value as any).tracks?.some((t: LibraryTrack) => t.path === p))) {
+    selected.value = null
+  }
+  await lib.deleteTracks(paths)
+  clearSelection()
+}
+
 // ── Rename ────────────────────────────────────────────────
 const renaming = ref<LibraryAlbum | null>(null)
 const renameVal = ref('')
@@ -173,6 +241,19 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
         <input v-model="searchQ" class="search-input" placeholder="Search…" />
       </div>
 
+      <!-- Select toggle -->
+      <button
+        v-if="view !== 'artists'"
+        class="select-btn" :class="{ active: selectionMode }"
+        @click="selectionMode = !selectionMode; if (!selectionMode) clearSelection()"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Select
+      </button>
+
       <!-- Scan button -->
       <button class="scan-btn" :class="{ scanning: lib.scanning }" @click="lib.scan()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" :class="{ spin: lib.scanning }">
@@ -208,10 +289,13 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
         <div v-if="view === 'albums'" class="grid">
           <div
             v-for="album in filteredAlbums" :key="album.name + album.artist"
-            class="card" :class="{ active: selected === album }"
-            @click="selected = selected === album ? null : album"
-            @dblclick="playAlbum(album)"
+            class="card" :class="{ active: selected === album, 'sel-active': isAlbumSelected(album) }"
+            @click="selectionMode ? toggleAlbum(album) : (selected = selected === album ? null : album)"
+            @dblclick="!selectionMode && playAlbum(album)"
           >
+            <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(album) }">
+              <svg v-if="isAlbumSelected(album)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
             <div class="card-art" :style="coverUrl(album.coverPath) ? { backgroundImage: `url('${coverUrl(album.coverPath)}')` } : {}">
               <svg v-if="!album.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
                 <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
@@ -276,10 +360,13 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
         <div v-else-if="view === 'podcasts'" class="grid">
           <div
             v-for="show in filteredPodcasts" :key="show.name"
-            class="card" :class="{ active: selected === show }"
-            @click="selected = selected === show ? null : show"
-            @dblclick="playAlbum(show)"
+            class="card" :class="{ active: selected === show, 'sel-active': isAlbumSelected(show) }"
+            @click="selectionMode ? toggleAlbum(show) : (selected = selected === show ? null : show)"
+            @dblclick="!selectionMode && playAlbum(show)"
           >
+            <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(show) }">
+              <svg v-if="isAlbumSelected(show)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
             <div class="card-art" :style="coverUrl(show.coverPath) ? { backgroundImage: `url('${coverUrl(show.coverPath)}')` } : {}">
               <svg v-if="!show.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
                 <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
@@ -327,10 +414,14 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
             v-for="(track, i) in (view === 'tracks' ? filteredTracks : filteredVideos)"
             :key="track.id"
             class="track-row"
-            :class="{ playing: player.currentTrack?.id === track.id }"
-            @dblclick="playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
+            :class="{ playing: player.currentTrack?.id === track.id, 'sel-active': isTrackSelected(track) }"
+            @click="selectionMode && toggleTrack(track)"
+            @dblclick="!selectionMode && playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
           >
-            <span class="tr-num">{{ i + 1 }}</span>
+            <div v-if="selectionMode" class="tr-checkbox" :class="{ checked: isTrackSelected(track) }">
+              <svg v-if="isTrackSelected(track)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span v-else class="tr-num">{{ i + 1 }}</span>
             <div class="tr-thumb" :style="coverUrl(track.coverPath) ? { backgroundImage: `url('${coverUrl(track.coverPath)}')` } : {}">
               <svg v-if="!track.coverPath" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
@@ -478,6 +569,23 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 
     </div>
 
+    <!-- Bulk action bar -->
+    <Transition name="bulk-bar">
+      <div v-if="selectionMode" class="bulk-bar">
+        <span class="bulk-count">{{ selectedCount }} selected</span>
+        <div class="spacer" />
+        <button class="bulk-btn" @click="selectAll()">Select all</button>
+        <button class="bulk-btn" :disabled="!selectedCount" @click="clearSelection()">Clear</button>
+        <button class="bulk-btn bulk-btn--delete" :disabled="!selectedCount" @click="deleteSelected()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -491,6 +599,60 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   background: linear-gradient(to bottom, var(--bg-1), var(--bg-0));
   border-bottom: 1px solid var(--line); flex-shrink: 0;
 }
+/* ── Select button ─────────────────────────────────── */
+.select-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.select-btn:hover { background: var(--bg-3); color: var(--tx); }
+.select-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+/* ── Card checkbox ─────────────────────────────────── */
+.card-checkbox {
+  position: absolute; top: 7px; left: 7px; z-index: 3;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bg-3); border: 2px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.12s, border-color 0.12s;
+}
+.card-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.card.sel-active .card-art { box-shadow: 0 0 0 2px var(--accent); }
+
+/* ── Track row checkbox ────────────────────────────── */
+.tr-checkbox {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg-3); border: 2px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.12s, border-color 0.12s;
+}
+.tr-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.track-row.sel-active { background: var(--accent-glow); }
+
+/* ── Bulk action bar ───────────────────────────────── */
+.bulk-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 48px; flex-shrink: 0;
+  background: var(--bg-1); border-top: 1px solid var(--line);
+}
+.bulk-count { font-size: 12px; font-weight: 600; color: var(--tx); }
+.bulk-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--line-2); background: var(--bg-2);
+  color: var(--tx-dim); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.bulk-btn:hover:not(:disabled) { background: var(--bg-3); color: var(--tx); }
+.bulk-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.bulk-btn--delete { border-color: rgba(191,97,106,0.4); color: var(--bad); }
+.bulk-btn--delete:hover:not(:disabled) { background: rgba(191,97,106,0.15); }
+.bulk-bar-enter-active, .bulk-bar-leave-active { transition: height 0.15s, opacity 0.15s; }
+.bulk-bar-enter-from, .bulk-bar-leave-to { height: 0; opacity: 0; }
+
 .lib-title { font-size: 15px; font-weight: 800; color: var(--tx); margin: 0; }
 .lib-count { font-size: 10.5px; color: var(--tx-faint); background: var(--bg-2); padding: 2px 7px; border-radius: 20px; }
 .spacer { flex: 1; }
@@ -555,7 +717,7 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 }
 .card {
   background: none; border: none; cursor: pointer; text-align: left;
-  padding: 0; border-radius: 10px;
+  padding: 0; border-radius: 10px; position: relative;
   transition: transform 0.12s;
 }
 .card:hover { transform: translateY(-2px); }

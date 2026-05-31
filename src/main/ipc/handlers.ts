@@ -188,6 +188,17 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return destPath
   })
 
+  // library:delete-tracks — delete files from disk and remove from cache
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_DELETE_TRACKS, (_event, paths: string[]) => {
+    for (const p of paths) {
+      try { unlinkSync(p) } catch {}
+    }
+    if (libraryCache) {
+      libraryCache.tracks = libraryCache.tracks.filter(t => !paths.includes(t.path))
+      saveLibraryCache(libraryCache)
+    }
+  })
+
   // shell:show-in-folder — reveal a file in Explorer/Finder/Nautilus
   ipcMain.handle(IPC_CHANNELS.SHELL_SHOW_IN_FOLDER, (_event, filePath: string) => {
     shell.showItemInFolder(filePath)
