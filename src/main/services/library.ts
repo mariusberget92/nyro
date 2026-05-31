@@ -43,14 +43,14 @@ function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string
   }
 }
 
-function processFile(filePath: string, outputFolder: string, cacheDir: string): LibraryTrack {
+async function processFile(filePath: string, outputFolder: string, cacheDir: string): Promise<LibraryTrack> {
   const id = createHash('md5').update(filePath).digest('hex')
   const ext = extname(filePath).toLowerCase()
   const source = sourceFromPath(filePath, outputFolder)
 
   if (AUDIO_EXTS.has(ext)) {
     try {
-      const tags = NodeID3.read(filePath)
+      const tags = await NodeID3.Promise.read(filePath)
       let coverPath: string | undefined
       const pic = (tags.image as any)
       if (pic?.imageBuffer) {
@@ -95,14 +95,13 @@ export async function scanLibrary(outputFolder: string, cacheDir: string): Promi
   const files = walkDir(outputFolder)
   const tracks: LibraryTrack[] = []
 
-  // Process in batches of 10, yielding between each batch
-  const BATCH = 10
+  // Process files concurrently in small batches so NodeID3 async reads
+  // don't queue up and still yield the event loop between batches
+  const BATCH = 5
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH)
-    for (const f of batch) {
-      tracks.push(processFile(f, outputFolder, cacheDir))
-    }
-    // Yield to the event loop so IPC and download progress can continue
+    const results = await Promise.all(batch.map(f => processFile(f, outputFolder, cacheDir)))
+    tracks.push(...results)
     await new Promise<void>(res => setImmediate(res))
   }
 

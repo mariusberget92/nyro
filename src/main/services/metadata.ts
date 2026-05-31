@@ -9,10 +9,6 @@ export interface TrackMetadata {
   year?: string
 }
 
-/**
- * Write ID3 tags to an MP3 file.
- * Uses node-id3 to embed: Title, Artist, Album, UnsynchronisedLyrics.
- */
 export async function writeID3Tags(filePath: string, meta: TrackMetadata): Promise<void> {
   const tags: NodeID3.Tags = {
     title: meta.title,
@@ -20,24 +16,12 @@ export async function writeID3Tags(filePath: string, meta: TrackMetadata): Promi
     album: meta.album
   }
 
-  if (meta.trackNumber) {
-    tags.trackNumber = meta.trackNumber
-  }
-
-  if (meta.year) {
-    tags.year = meta.year
-  }
-
+  if (meta.trackNumber) tags.trackNumber = meta.trackNumber
+  if (meta.year)        tags.year        = meta.year
   if (meta.lyrics) {
-    tags.unsynchronisedLyrics = {
-      language: 'eng',
-      text: meta.lyrics
-    }
+    tags.unsynchronisedLyrics = { language: 'eng', text: meta.lyrics }
   }
 
-  const result = NodeID3.write(tags, filePath)
-
-  if (result instanceof Error) {
-    throw result
-  }
+  const result = await NodeID3.Promise.write(tags, filePath)
+  if (result instanceof Error) throw result
 }

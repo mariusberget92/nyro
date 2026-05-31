@@ -118,7 +118,11 @@ useIpc('updater:status', (payload: any) => {
     <Rail />
     <div class="content-col">
       <main class="main-area">
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+          <KeepAlive>
+            <component :is="Component" />
+          </KeepAlive>
+        </RouterView>
       </main>
       <MiniPlayer />
     </div>
