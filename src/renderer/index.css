@@ -4,37 +4,42 @@
 
 @layer base {
   :root {
-    /* ── Backgrounds — Nyro Graphite palette ── */
-    --bg-canvas: #0e131b;
-    --bg-0:      #121820;
-    --bg-1:      #171d28;
-    --bg-2:      #1e2635;
-    --bg-3:      #25303f;
-    --bg-4:      #2e3b4d;
+    /* ── Backgrounds — Nyro graphite ramp (was GitHub-dark) ── */
+    --bg-canvas: #0a0e15;
+    --bg-0:      #0e131b;
+    --bg-1:      #141b26;
+    --bg-2:      #1b2433;
+    --bg-3:      #232e40;
+    --bg-4:      #2c384d;
 
-    /* ── Text ── */
+    /* ── Text — high readability ── */
     --tx:        #e7ecf3;
-    --tx-dim:    #98a8bb;
-    --tx-faint:  #566678;
+    --tx-dim:    #97a3b6;
+    --tx-faint:  #586679;
 
     /* ── Lines ── */
-    --line:      rgba(255,255,255,0.07);
-    --line-2:    rgba(255,255,255,0.12);
+    --line:      rgba(255,255,255,0.08);
+    --line-2:    rgba(255,255,255,0.14);
 
-    /* ── Accent — Nyro Blue → Violet ── */
+    /* ── Accent — Nyro blue → violet ── */
     --accent:              #3d7fff;
     --accent-2:            #7c5cff;
-    --accent-gradient:     linear-gradient(135deg, #3d7fff, #7c5cff);
     --accent-glow:         rgba(61,127,255,0.12);
     --accent-glow-strong:  rgba(61,127,255,0.22);
+    --accent-grad:         linear-gradient(135deg, #3d7fff, #7c5cff);
 
-    --ok:   #3fb950;
-    --warn: #d29922;
+    --ok:   #3fb98a;
+    --warn: #d2a022;
     --bad:  #f85149;
-    --conv: #7c5cff;
+    --conv: #a78bff;
 
     --radius: 8px;
     --rail-w: 96px;
+
+    /* ── Type ── */
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-sans:    'Inter', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -43,7 +48,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-family: var(--font-sans);
     font-size: 14px;
   }
 
@@ -70,12 +75,22 @@
 
   /* ── Selection ─────────────────────────────────────── */
   ::selection {
-    background: rgba(61,127,255,0.25);
+    background: rgba(61, 127, 255, 0.25);
     color: var(--tx);
   }
 }
 
 @layer utilities {
-  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  .font-mono    { font-family: 'JetBrains Mono', monospace; }
+  .font-display { font-family: var(--font-display); }
   .text-balance { text-wrap: balance; }
+
+  /* Brand gradient helpers */
+  .bg-accent-grad   { background: var(--accent-grad); }
+  .text-accent-grad {
+    background: var(--accent-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }

@@ -1,16 +1,10 @@
 <div align="center">
 
-# 〉_ nyro
+<img src="branding/nyro-banner.png" alt="Nyro" width="880" />
 
-**A clean, fast desktop app for downloading music and podcasts — built for people who actually own their listening.**
-
-[![Release](https://img.shields.io/github/v/release/mariusberget92/nyro?style=flat-square&color=58a6ff)](https://github.com/mariusberget92/nyro/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-58a6ff?style=flat-square)](https://github.com/mariusberget92/nyro/releases)
-[![License](https://img.shields.io/github/license/mariusberget92/nyro?style=flat-square&color=a3be8c)](LICENSE)
-
-<br />
-
-![Nyro Queue](docs/screenshot-queue.png)
+[![Release](https://img.shields.io/github/v/release/mariusberget92/nyro?style=flat-square&color=3d7fff)](https://github.com/mariusberget92/nyro/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-3d7fff?style=flat-square)](https://github.com/mariusberget92/nyro/releases)
+[![License](https://img.shields.io/github/license/mariusberget92/nyro?style=flat-square&color=3fb98a)](LICENSE)
 
 </div>
 

@@ -57,6 +57,7 @@
       }
     ],
     "win": {
+      "icon": "branding/icons/nyro-512.png",
       "target": [
         {
           "target": "nsis",
@@ -79,6 +80,7 @@
       "createStartMenuShortcut": true
     },
     "linux": {
+      "icon": "branding/icons",
       "target": [
         "AppImage",
         "deb"
@@ -86,6 +88,7 @@
       "category": "AudioVideo"
     },
     "mac": {
+      "icon": "branding/icons/nyro-1024.png",
       "target": [
         "dmg"
       ],

@@ -30,16 +30,17 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
 <template>
   <nav class="rail">
 
-    <!-- Logo -->
+    <!-- Logo — Nyro mark -->
     <div class="logo">
       <div class="logo-mark">
-        <svg width="24" height="30" viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <line x1="4"  y1="3"  x2="4"  y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          <line x1="4"  y1="3"  x2="17" y2="19" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          <line x1="17" y1="3"  x2="17" y2="23" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          <line x1="17" y1="23" x2="13" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          <line x1="17" y1="23" x2="21" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          <line x1="13" y1="29" x2="22" y2="29" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <svg width="22" height="22" viewBox="0 0 120 120" fill="none">
+          <g stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M38 36 V79" />
+            <path d="M38 36 L82 84" />
+            <path d="M82 36 V72" />
+            <path d="M70 72 L82 84 L94 72" />
+            <path d="M49 100 H83" stroke-width="11" />
+          </g>
         </svg>
       </div>
     </div>
@@ -190,17 +191,19 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .logo-mark {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3d7fff, #7c5cff);
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  background: var(--accent-grad);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(61,127,255,0.35);
+  box-shadow: 0 8px 22px -8px rgba(61, 127, 255, 0.7),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+              inset 0 1.5px 1px rgba(255, 255, 255, 0.3);
 }
 
 /* ── Nav ──────────────────────────────────────── */
@@ -258,8 +261,8 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   right: -7px;
   min-width: 15px;
   height: 15px;
-  background: var(--accent);
-  color: var(--bg-0);
+  background: var(--accent-grad);
+  color: #fff;
   font-size: 8.5px;
   font-weight: 800;
   border-radius: 8px;
@@ -268,6 +271,7 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   justify-content: center;
   padding: 0 3px;
   font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 2px 6px -1px rgba(61, 127, 255, 0.6);
 }
 
 /* ── Coming soon dot ──────────────────────────── */
@@ -315,8 +319,8 @@ const isEqualizer  = computed(() => route.path === '/equalizer')
   transition: opacity 0.15s;
   width: 100%;
 }
-.bin-pill--ok  { background: color-mix(in srgb, var(--ok)  15%, transparent); color: var(--ok); }
-.bin-pill--err { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.bin-pill--ok  { background: color-mix(in srgb, var(--ok) 16%, transparent);  color: var(--ok); }
+.bin-pill--err { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
 .bin-pill--checking { background: var(--bg-2); color: var(--tx-faint); }
 .bin-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
