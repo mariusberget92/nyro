@@ -103,7 +103,7 @@ class QueueManager {
     return [...this.queue]
   }
 
-  async addPodcastEpisode(episodeId: string, outputFolder?: string): Promise<QueueItem> {
+  async addPodcastEpisode(episodeId: string, outputFolder?: string, showName?: string): Promise<QueueItem> {
     const settings = loadSettings()
     if (!settings.taddyUserId || !settings.taddyApiKey) throw new Error('Taddy credentials not set')
     const ep = await getEpisode(episodeId, settings.taddyUserId, settings.taddyApiKey)
@@ -116,12 +116,13 @@ class QueueManager {
       addedAt: Date.now(),
       metadata: {
         title: ep.name,
-        artist: '',
-        album: '',
+        artist: showName || '',
+        album: showName || '',
         duration: ep.duration,
         thumbnailUrl: ep.imageUrl,
         videoId: ep.uuid,
-        audioUrl: ep.audioUrl
+        audioUrl: ep.audioUrl,
+        podcastShow: showName,
       }
     }
     if (outputFolder) item.outputFolder = outputFolder

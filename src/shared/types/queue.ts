@@ -5,7 +5,6 @@ export type QueueStatus =
   | 'converting'
   | 'tagging'
   | 'completed'
-  | 'paused'
   | 'cancelled'
   | 'failed'
 
@@ -18,7 +17,6 @@ export interface QueueItemMetadata {
   thumbnailUrl?: string
   videoId: string
   podcastShow?: string
-  podcastShowId?: string
   audioUrl?: string
 }
 
@@ -26,8 +24,7 @@ export interface QueueItem {
   id: string
   url: string
   source?: 'youtube' | 'podcast'
-  podcastShowTitle?: string
-  playlistTitle?: string      // set when item came from a playlist URL
+  playlistTitle?: string
   status: QueueStatus
   progress: number
   metadata?: QueueItemMetadata

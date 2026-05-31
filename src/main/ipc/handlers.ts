@@ -121,8 +121,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   })
 
   // podcast:add-episode
-  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string, outputFolder?: string) => {
-    return queueManager.addPodcastEpisode(episodeId, outputFolder)
+  ipcMain.handle(IPC_CHANNELS.PODCAST_ADD_EPISODE, async (_event, episodeId: string, outputFolder?: string, showName?: string) => {
+    return queueManager.addPodcastEpisode(episodeId, outputFolder, showName)
   })
 
   // library:scan — walk output folder, read ID3 tags

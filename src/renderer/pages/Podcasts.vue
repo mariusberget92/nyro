@@ -74,7 +74,7 @@ async function addEpisode(ep: TaddyEpisode) {
   next.add(ep.uuid)
   addingEpisodes.value = next
   try {
-    const item = await window.nyro.invoke('podcast:add-episode', ep.uuid)
+    const item = await window.nyro.invoke('podcast:add-episode', ep.uuid, undefined, selectedShow.value?.name)
     queueStore.items.push(item as any)
     toastStore.add(`Added: ${ep.name}`, 'success')
   } catch (e: any) {
