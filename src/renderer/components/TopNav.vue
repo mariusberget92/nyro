@@ -20,7 +20,6 @@ const tabs = [
   { label: 'Podcasts',  path: '/podcasts'  },
   { label: 'Playlists', path: '/playlists' },
   { label: 'History',   path: '/history'   },
-  { label: 'Equalizer', path: '/equalizer' },
 ]
 
 function isActive(path: string) {

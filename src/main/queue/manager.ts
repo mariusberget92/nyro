@@ -1,11 +1,10 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
+import { mkdirSync, existsSync, renameSync, unlinkSync, copyFileSync, writeFileSync } from 'fs'
 import https from 'https'
 import http from 'http'
 import { tmpdir } from 'os'
 import { v4 as uuidv4 } from 'uuid'
-import sharp from 'sharp'
 import type { QueueItem, QueueStatus } from '@shared/types/queue'
 import { IPC_CHANNELS, YOUTUBE_URL_PATTERNS } from '@shared/constants'
 import { fetchMetadata, downloadMedia } from '../services/ytdlp'
@@ -32,46 +31,6 @@ function fetchBuffer(url: string): Promise<Buffer> {
   })
 }
 
-// Map of folder → list of collected thumbnail buffers for composite generation
-const folderThumbs = new Map<string, Buffer[]>()
-
-async function addThumbToFolder(folder: string, imgBuf: Buffer): Promise<void> {
-  const thumbs = folderThumbs.get(folder) ?? []
-  thumbs.push(imgBuf)
-  folderThumbs.set(folder, thumbs)
-  await buildFolderCover(folder, thumbs)
-}
-
-async function buildFolderCover(folder: string, thumbs: Buffer[]): Promise<void> {
-  const dest = join(folder, 'cover.jpg')
-  try {
-    const SIZE = 600  // final cover size
-    const HALF = SIZE / 2
-
-    if (thumbs.length === 1) {
-      await sharp(thumbs[0]).resize(SIZE, SIZE, { fit: 'cover' }).jpeg({ quality: 90 }).toFile(dest)
-      return
-    }
-
-    // 2×2 grid — use up to 4 thumbs, repeat if fewer than 4
-    const slots = [0, 1, 2, 3].map(i => thumbs[i % thumbs.length])
-    const resized = await Promise.all(slots.map(buf =>
-      sharp(buf).resize(HALF, HALF, { fit: 'cover' }).jpeg({ quality: 85 }).toBuffer()
-    ))
-
-    await sharp({
-      create: { width: SIZE, height: SIZE, channels: 3, background: { r: 20, g: 20, b: 28 } }
-    })
-      .composite([
-        { input: resized[0], top: 0,    left: 0    },
-        { input: resized[1], top: 0,    left: HALF },
-        { input: resized[2], top: HALF, left: 0    },
-        { input: resized[3], top: HALF, left: HALF },
-      ])
-      .jpeg({ quality: 90 })
-      .toFile(dest)
-  } catch { /* non-fatal */ }
-}
 
 function resolveOutputPath(item: QueueItem, settings: ReturnType<typeof loadSettings>): string | null {
   const meta = item.metadata
@@ -472,9 +431,6 @@ class QueueManager {
       const finalPath = join(targetFolder, `${safeTitle}.mp3`)
       moveFile(tempMp3, finalPath)
 
-      if (podThumbBuf) {
-        await addThumbToFolder(targetFolder, podThumbBuf)
-      }
 
       this.updateItem(item.id, {
         status: 'completed',
@@ -683,11 +639,6 @@ class QueueManager {
 
       const finalPath = join(targetFolder, `${filename}.mp3`)
       moveFile(tempMp3, finalPath)
-
-      // Add thumb to folder — rebuilds composite (1 thumb = single, 2-4 = grid)
-      if (thumbBuf) {
-        await addThumbToFolder(targetFolder, thumbBuf)
-      }
 
       // Save synced LRC sidecar next to the MP3
       if (lyricsSynced) {
