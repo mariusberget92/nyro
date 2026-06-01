@@ -4,6 +4,7 @@ import { createReadStream, statSync, existsSync } from 'fs'
 import { registerIpcHandlers } from './ipc/handlers'
 import { checkAndUpdate } from './services/updater'
 import { IPC_CHANNELS } from '@shared/constants'
+import { getDb, getThumbnail } from './database/db'
 
 const MIME: Record<string, string> = {
   mp3: 'audio/mpeg', mp4: 'video/mp4', m4a: 'audio/mp4',
@@ -67,10 +68,10 @@ function serveFile(filePath: string, rangeHeader: string | null): Response {
 }
 
 // Must be called before app is ready
-protocol.registerSchemesAsPrivileged([{
-  scheme: 'nyro-file',
-  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true }
-}])
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'nyro-file',  privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true } },
+  { scheme: 'nyro-thumb', privileges: { secure: true, standard: true, supportFetchAPI: true } },
+])
 
 // Ensure single instance
 const gotLock = app.requestSingleInstanceLock()
@@ -186,6 +187,22 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Serve thumbnails from SQLite
+  protocol.handle('nyro-thumb', (request) => {
+    try {
+      const trackId = new URL(request.url).hostname
+      if (!trackId) return new Response(null, { status: 404 })
+      const row = getThumbnail(getDb(), trackId)
+      if (!row) return new Response(null, { status: 404 })
+      return new Response(row.data as unknown as BodyInit, {
+        status: 200,
+        headers: { 'Content-Type': row.mime, 'Cache-Control': 'public, max-age=31536000, immutable' },
+      })
+    } catch {
+      return new Response(null, { status: 404 })
+    }
+  })
+
   // Serve local files — handles Range requests so HTML5 audio seeking works
   protocol.handle('nyro-file', (request) => {
     try {

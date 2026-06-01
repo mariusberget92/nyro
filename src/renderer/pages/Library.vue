@@ -41,6 +41,7 @@ async function startRename(album: LibraryAlbum, e: Event) {
   renameVal.value = album.name
   renameError.value = ''
   await nextTick()
+  renameInputEl.value?.focus()
   renameInputEl.value?.select()
 }
 
@@ -100,6 +101,8 @@ const filteredVideos = computed(() =>
 
 function coverUrl(path?: string) {
   if (!path) return null
+  // nyro-thumb:// and nyro-file:// are already valid Electron protocol URLs
+  if (path.startsWith('nyro-thumb://') || path.startsWith('nyro-file://') || path.startsWith('data:')) return path
   return `nyro-file://local?p=${encodeURIComponent(path)}`
 }
 

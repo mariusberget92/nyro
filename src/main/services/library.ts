@@ -1,8 +1,10 @@
 import { createHash } from 'crypto'
-import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
+import { readdirSync, existsSync, readFileSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
 import NodeID3 from 'node-id3'
+import type Database from 'better-sqlite3'
 import type { LibraryTrack, LibraryScanResult } from '@shared/types/library'
+import { upsertTracksAndThumbs } from '../database/db'
 
 const AUDIO_EXTS = new Set(['.mp3', '.m4a', '.flac', '.ogg', '.wav', '.aac'])
 const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.webm', '.mov'])
@@ -15,9 +17,7 @@ function walkDir(dir: string, files: string[] = []): string[] {
       walkDir(full, files)
     } else if (entry.isFile()) {
       const ext = extname(entry.name).toLowerCase()
-      if (AUDIO_EXTS.has(ext) || VIDEO_EXTS.has(ext)) {
-        files.push(full)
-      }
+      if (AUDIO_EXTS.has(ext) || VIDEO_EXTS.has(ext)) files.push(full)
     }
   }
   return files
@@ -31,21 +31,13 @@ function sourceFromPath(filePath: string, outputFolder: string): LibraryTrack['s
   return 'music'
 }
 
-function saveCover(coverData: Buffer, cacheDir: string, trackId: string): string | undefined {
-  try {
-    // If a manually-set PNG cover exists, preserve it instead of overwriting with the ID3 JPEG extract
-    const pngPath = join(cacheDir, `${trackId}.png`)
-    if (existsSync(pngPath)) return pngPath
-
-    const coverPath = join(cacheDir, `${trackId}.jpg`)
-    writeFileSync(coverPath, coverData)
-    return coverPath
-  } catch {
-    return undefined
-  }
+type FileResult = {
+  track: LibraryTrack
+  thumbData?: Buffer
+  thumbMime?: string
 }
 
-async function processFile(filePath: string, outputFolder: string, cacheDir: string): Promise<LibraryTrack> {
+async function processFile(filePath: string, outputFolder: string): Promise<FileResult> {
   const id = createHash('md5').update(filePath).digest('hex')
   const ext = extname(filePath).toLowerCase()
   const source = sourceFromPath(filePath, outputFolder)
@@ -53,28 +45,24 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
   if (AUDIO_EXTS.has(ext)) {
     try {
       const tags = await NodeID3.Promise.read(filePath)
-      let coverPath: string | undefined
-      const pic = (tags.image as any)
-      if (pic && pic.imageBuffer) {
-        coverPath = saveCover(pic.imageBuffer, cacheDir, id)
-      }
-
-      // Fall back to cover.jpg sidecar in the same folder if no embedded cover
-      if (!coverPath) {
-        const sideCover = join(dirname(filePath), 'cover.jpg')
-        if (existsSync(sideCover)) coverPath = sideCover
-      }
-
       const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
-      const resolvedLrcPath = existsSync(lrcPath) ? lrcPath : undefined
+      const fallbackAlbum = source === 'podcast' ? basename(dirname(filePath)) : 'Unknown Album'
 
-      // For podcasts, fall back to the immediate parent folder name (the show folder)
-      // rather than "Unknown Album" so episodes always group under their show.
-      const fallbackAlbum = source === 'podcast'
-        ? basename(dirname(filePath))
-        : 'Unknown Album'
+      let thumbData: Buffer | undefined
+      let thumbMime = 'image/jpeg'
+      const pic = tags.image as any
+      if (pic?.imageBuffer) {
+        thumbData = pic.imageBuffer as Buffer
+        thumbMime = pic.mime ?? 'image/jpeg'
+      } else {
+        // Fall back to cover.jpg sidecar in album folder
+        const sidecar = join(dirname(filePath), 'cover.jpg')
+        if (existsSync(sidecar)) {
+          try { thumbData = readFileSync(sidecar) } catch { /* non-fatal */ }
+        }
+      }
 
-      return {
+      const track: LibraryTrack = {
         id,
         path: filePath,
         title: tags.title || basename(filePath, ext),
@@ -83,46 +71,53 @@ async function processFile(filePath: string, outputFolder: string, cacheDir: str
         year: tags.year ? parseInt(tags.year) : undefined,
         trackNumber: tags.trackNumber ? parseInt(tags.trackNumber) : undefined,
         genre: Array.isArray(tags.genre) ? tags.genre[0] : tags.genre,
-        coverPath,
-        lrcPath: resolvedLrcPath,
+        coverPath: thumbData ? `nyro-thumb://${id}` : undefined,
+        lrcPath: existsSync(lrcPath) ? lrcPath : undefined,
         source,
-      } satisfies LibraryTrack
+      }
+      return { track, thumbData, thumbMime }
     } catch {
-      const catchFallbackAlbum = source === 'podcast'
-        ? basename(dirname(filePath))
-        : 'Unknown Album'
+      const fallbackAlbum = source === 'podcast' ? basename(dirname(filePath)) : 'Unknown Album'
       return {
-        id, path: filePath,
-        title: basename(filePath, ext),
-        artist: 'Unknown Artist',
-        album: catchFallbackAlbum,
-        source,
-      } satisfies LibraryTrack
+        track: { id, path: filePath, title: basename(filePath, ext), artist: 'Unknown Artist', album: fallbackAlbum, source },
+      }
     }
   }
 
   return {
-    id, path: filePath,
-    title: basename(filePath, ext),
-    artist: 'Unknown Artist',
-    album: 'Unknown Album',
-    source,
-  } satisfies LibraryTrack
+    track: { id, path: filePath, title: basename(filePath, ext), artist: 'Unknown Artist', album: 'Unknown Album', source },
+  }
 }
 
 const BATCH = 5
 
-export async function scanLibrary(outputFolder: string, cacheDir: string): Promise<LibraryScanResult> {
-  mkdirSync(cacheDir, { recursive: true })
+export async function scanLibrary(outputFolder: string, db: Database.Database): Promise<LibraryScanResult> {
   const files = walkDir(outputFolder)
-  const tracks: LibraryTrack[] = []
+  const results: FileResult[] = []
 
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH)
-    const results = await Promise.all(batch.map(f => processFile(f, outputFolder, cacheDir)))
-    tracks.push(...results)
+    const batchResults = await Promise.all(batch.map(f => processFile(f, outputFolder)))
+    results.push(...batchResults)
     await new Promise<void>(res => setImmediate(res))
   }
 
-  return { tracks, scannedAt: Date.now() }
+  const scannedAt = Date.now()
+  upsertTracksAndThumbs(db, results.map(r => ({
+    id: r.track.id,
+    path: r.track.path,
+    title: r.track.title,
+    artist: r.track.artist,
+    album: r.track.album,
+    year: r.track.year,
+    trackNumber: r.track.trackNumber,
+    genre: r.track.genre,
+    lrcPath: r.track.lrcPath,
+    source: r.track.source,
+    scannedAt,
+    thumbData: r.thumbData,
+    thumbMime: r.thumbMime,
+  })))
+
+  return { tracks: results.map(r => r.track), scannedAt }
 }

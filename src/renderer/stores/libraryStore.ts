@@ -120,10 +120,13 @@ export const useLibraryStore = defineStore('library', {
     async renameFolder(oldPath: string, newName: string): Promise<string> {
       const newPath = await window.nyro.invoke<string>('library:rename-folder', oldPath, newName)
       for (const t of this.tracks) {
-        if (t.path.startsWith(oldPath)) {
+        if (t.path.startsWith(oldPath + '/') || t.path.startsWith(oldPath + '\\')) {
           t.path = newPath + t.path.slice(oldPath.length)
-          if (t.coverPath) t.coverPath = newPath + t.coverPath.slice(oldPath.length)
           t.album = newName
+          // Only patch file-system cover paths (nyro-thumb:// covers are stored in SQLite by ID — path-independent)
+          if (t.coverPath && !t.coverPath.startsWith('nyro-thumb://') && !t.coverPath.startsWith('nyro-file://') && t.coverPath.startsWith(oldPath)) {
+            t.coverPath = newPath + t.coverPath.slice(oldPath.length)
+          }
         }
       }
       return newPath

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^10.9.0",
+    "better-sqlite3": "^12.10.0",
     "electron-store": "^8.1.0",
     "node-id3": "^0.2.6",
     "pinia": "^2.1.0",
@@ -100,7 +101,8 @@
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/sharp/**/*"
+      "node_modules/sharp/**/*",
+      "node_modules/better-sqlite3/**/*"
     ]
   }
 }
