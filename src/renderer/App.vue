@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import Rail from './components/Rail.vue'
+import TopNav from './components/TopNav.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { useQueueStore } from './stores/queueStore'
@@ -115,17 +115,15 @@ useIpc('updater:status', (payload: any) => {
 
 <template>
   <div class="app-shell">
-    <Rail />
-    <div class="content-col">
-      <main class="main-area">
-        <RouterView v-slot="{ Component }">
-          <KeepAlive>
-            <component :is="Component" />
-          </KeepAlive>
-        </RouterView>
-      </main>
-      <MiniPlayer />
-    </div>
+    <TopNav />
+    <main class="main-area">
+      <RouterView v-slot="{ Component }">
+        <KeepAlive>
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
+    </main>
+    <MiniPlayer />
     <ToastContainer />
   </div>
 </template>
@@ -133,16 +131,11 @@ useIpc('updater:status', (payload: any) => {
 <style scoped>
 .app-shell {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
   background: var(--bg-canvas);
   color: var(--tx);
-}
-.content-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 .main-area {
   flex: 1;
