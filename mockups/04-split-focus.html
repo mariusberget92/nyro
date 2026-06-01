@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyro — Concept 4: Split Focus / Dark Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-canvas: #060a10; --bg-0: #0a0e15; --bg-1: #0e1420;
+  --bg-2: #151d2b; --bg-3: #1d2838; --bg-4: #263245;
+  --tx: #e7ecf3; --tx-dim: #8a97ae; --tx-faint: #4e5f73;
+  --line: rgba(255,255,255,0.06); --line-2: rgba(255,255,255,0.11);
+  --glass: rgba(255,255,255,0.04);
+  --accent: #3d7fff; --accent-2: #7c5cff;
+  --accent-grad: linear-gradient(135deg, #3d7fff, #7c5cff);
+  --ok: #3fb98a; --bad: #f85149;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+}
+body { background: var(--bg-canvas); color: var(--tx); font-family: var(--font-sans); font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Ambient background glow */
+body::before { content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(61,127,255,.08) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+
+.titlebar { height: 38px; background: rgba(10,14,21,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0; position: relative; z-index: 100; }
+.traffic { display: flex; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.tb-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--tx-faint); margin: 0 auto; }
+
+.app { display: flex; flex: 1; overflow: hidden; position: relative; z-index: 1; }
+
+/* Minimal left rail */
+.rail { width: 52px; background: var(--bg-0); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 3px; flex-shrink: 0; }
+.rail-logo { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-grad); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; box-shadow: 0 0 20px -4px rgba(61,127,255,.5); }
+.rail-btn { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; position: relative; }
+.rail-btn svg { opacity: .4; transition: opacity .15s; }
+.rail-btn:hover svg { opacity: .8; }
+.rail-btn.active { background: var(--glass); }
+.rail-btn.active svg { opacity: 1; }
+.rail-btn.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 2px; height: 18px; border-radius: 0 2px 2px 0; background: var(--accent-grad); }
+.rail-badge { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--bg-0); }
+.rail-spacer { flex: 1; }
+.rail-divider { width: 24px; height: 1px; background: var(--line); margin: 4px 0; }
+
+/* Main split */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* Left: downloader focus */
+.dl-panel { width: 400px; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg-0); flex-shrink: 0; }
+
+.dl-header { padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+.dl-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 12px; }
+
+/* Glass URL input */
+.url-glass { background: var(--glass); border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
+.url-glass input { background: none; border: none; outline: none; font-family: var(--font-sans); font-size: 13px; color: var(--tx); flex: 1; }
+.url-glass input::placeholder { color: var(--tx-faint); }
+.add-btn { width: 28px; height: 28px; border-radius: 7px; background: var(--accent-grad); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+
+.fmt-bar { display: flex; gap: 4px; margin-top: 10px; }
+.fmt-chip { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--bg-2); color: var(--tx-faint); cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+.fmt-chip.active { background: rgba(61,127,255,.12); color: var(--accent); border-color: rgba(61,127,255,.25); }
+.qual-chip { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--bg-2); color: var(--tx-faint); cursor: pointer; border: 1px solid transparent; margin-left: auto; }
+.qual-chip.active { background: rgba(124,92,255,.12); color: var(--accent-2); border-color: rgba(124,92,255,.25); }
+
+.queue-scroll { flex: 1; overflow-y: auto; padding: 8px; }
+
+/* Download cards */
+.dl-card { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 6px; transition: border-color .15s; }
+.dl-card.downloading { border-color: rgba(61,127,255,.2); background: rgba(61,127,255,.04); }
+.dl-card-top { display: flex; align-items: flex-start; gap: 10px; }
+.dl-art { width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0; overflow: hidden; }
+.dl-meta { flex: 1; min-width: 0; }
+.dl-name { font-size: 13px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-sub { font-size: 11px; color: var(--tx-faint); margin-top: 3px; display: flex; gap: 5px; align-items: center; }
+.src-tag { background: var(--bg-3); border: 1px solid var(--line-2); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--tx-dim); }
+.dl-action { width: 26px; height: 26px; border-radius: 6px; background: var(--bg-3); border: 1px solid var(--line); color: var(--tx-faint); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; flex-shrink: 0; }
+.dl-progress { margin-top: 10px; }
+.dl-bar { height: 3px; background: var(--bg-4); border-radius: 2px; overflow: hidden; }
+.dl-fill { height: 100%; background: var(--accent-grad); border-radius: 2px; transition: width .3s; }
+.dl-info { display: flex; justify-content: space-between; margin-top: 5px; font-size: 10px; color: var(--tx-faint); }
+.dl-speed { font-weight: 600; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.dl-footer { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.btn { border: none; cursor: pointer; font-family: var(--font-sans); font-size: 12px; font-weight: 600; border-radius: 7px; padding: 8px 14px; transition: all .15s; }
+.btn-ghost { background: var(--bg-3); color: var(--tx-dim); }
+.btn-ghost:hover { background: var(--bg-4); color: var(--tx); }
+.btn-primary { background: var(--accent-grad); color: #fff; box-shadow: 0 4px 16px -4px rgba(61,127,255,.5); flex: 1; text-align: center; }
+.btn-primary:hover { box-shadow: 0 6px 20px -4px rgba(61,127,255,.7); }
+
+/* Right: library */
+.library-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.lib-header { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.lib-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.lib-count { font-size: 11px; color: var(--tx-faint); background: var(--bg-2); padding: 2px 7px; border-radius: 8px; }
+.spacer { flex: 1; }
+.search-field { background: var(--bg-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; font-family: var(--font-sans); font-size: 12px; color: var(--tx-dim); outline: none; width: 170px; }
+.search-field::placeholder { color: var(--tx-faint); }
+
+/* Album masonry grid */
+.lib-content { flex: 1; overflow-y: auto; padding: 16px; }
+.album-section { margin-bottom: 24px; }
+.section-hdr { font-size: 11px; font-weight: 600; color: var(--tx-faint); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-hdr::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.album-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.alb { cursor: pointer; border-radius: 10px; overflow: hidden; background: var(--bg-1); border: 1px solid var(--line); transition: all .18s; }
+.alb:hover { border-color: var(--line-2); transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(0,0,0,.4); }
+.alb-cover { width: 100%; aspect-ratio: 1; background: var(--bg-3); display: flex; align-items: center; justify-content: center; font-size: 36px; }
+.alb-body { padding: 8px 10px; }
+.alb-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alb-artist { font-size: 10px; color: var(--tx-faint); margin-top: 1px; }
+
+/* Player — floating glass bar at bottom of library panel */
+.player-float { margin: 0 12px 12px; background: rgba(14,20,32,0.85); backdrop-filter: blur(24px); border: 1px solid var(--line-2); border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 32px -8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06); flex-shrink: 0; }
+.pf-art { width: 40px; height: 40px; border-radius: 8px; background: var(--accent-grad); flex-shrink: 0; box-shadow: 0 4px 12px -4px rgba(61,127,255,.5); }
+.pf-info { width: 160px; flex-shrink: 0; }
+.pf-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-artist { font-size: 10px; color: var(--tx-faint); margin-top: 1px; }
+.pf-center { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pf-btns { display: flex; align-items: center; gap: 10px; }
+.pf-ctrl { background: none; border: none; color: var(--tx-faint); cursor: pointer; font-size: 14px; padding: 0; }
+.pf-ctrl:hover { color: var(--tx); }
+.pf-play { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-grad); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 12px -4px rgba(124,92,255,.6); }
+.pf-scrub { width: 100%; display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--tx-faint); }
+.pf-track { flex: 1; height: 3px; background: var(--bg-4); border-radius: 2px; }
+.pf-progress { height: 100%; width: 38%; background: var(--accent-grad); border-radius: 2px; }
+.pf-vol { display: flex; align-items: center; gap: 5px; color: var(--tx-faint); font-size: 11px; width: 80px; flex-shrink: 0; }
+.pf-vbar { flex: 1; height: 3px; background: var(--bg-4); border-radius: 2px; }
+.pf-vfill { height: 100%; width: 70%; background: var(--bg-3); border-radius: 2px; }
+
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <div class="traffic"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+  <div class="tb-title">Nyro</div>
+</div>
+<div class="app">
+  <!-- Rail -->
+  <div class="rail">
+    <div class="rail-logo">
+      <svg width="18" height="18" viewBox="0 0 120 120" fill="none">
+        <g stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M38 36 V79"/><path d="M38 36 L82 84"/><path d="M82 36 V72"/>
+          <path d="M70 72 L82 84 L94 72"/><path d="M49 100 H83" stroke-width="12"/>
+        </g>
+      </svg>
+    </div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </div>
+    <div class="rail-btn active">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+      <div class="rail-badge"></div>
+    </div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </div>
+    <div class="rail-divider"></div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </div>
+    <div class="rail-spacer"></div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M2 12h2M20 12h2"/></svg>
+    </div>
+    <div class="rail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </div>
+  </div>
+
+  <!-- Downloader -->
+  <div class="dl-panel">
+    <div class="dl-header">
+      <div class="dl-title">Download Queue</div>
+      <div class="url-glass">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx-faint)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <input placeholder="Paste URL here…" value="https://youtu.be/5NV6Rdv1a3I">
+        <button class="add-btn">+</button>
+      </div>
+      <div class="fmt-bar">
+        <div class="fmt-chip active">MP3</div>
+        <div class="fmt-chip">FLAC</div>
+        <div class="fmt-chip">MP4</div>
+        <div class="fmt-chip">WAV</div>
+        <div class="qual-chip active">320k</div>
+      </div>
+    </div>
+
+    <div class="queue-scroll">
+      <!-- Downloading -->
+      <div class="dl-card downloading">
+        <div class="dl-card-top">
+          <div class="dl-art" style="background:linear-gradient(135deg,#3d7fff,#7c5cff)"></div>
+          <div class="dl-meta">
+            <div class="dl-name">Not Like Us — Kendrick Lamar</div>
+            <div class="dl-sub">
+              <span class="src-tag">YouTube</span>
+              <span>MP3 · 320k</span>
+            </div>
+          </div>
+          <div class="dl-action">✕</div>
+        </div>
+        <div class="dl-progress">
+          <div class="dl-bar"><div class="dl-fill" style="width:68%"></div></div>
+          <div class="dl-info">
+            <span>Downloading… <span class="dl-speed">68%</span></span>
+            <span class="dl-speed">2.3 MB/s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending -->
+      <div class="dl-card" style="opacity:.65">
+        <div class="dl-card-top">
+          <div class="dl-art" style="background:var(--bg-3)"></div>
+          <div class="dl-meta">
+            <div class="dl-name">Birds of a Feather — Billie Eilish</div>
+            <div class="dl-sub"><span class="src-tag">YouTube</span><span>MP3 · 320k</span></div>
+          </div>
+          <div class="dl-action">✕</div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="dl-card">
+        <div class="dl-card-top">
+          <div class="dl-art" style="background:linear-gradient(135deg,#3fb98a22,#3d7fff22);display:flex;align-items:center;justify-content:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="dl-meta">
+            <div class="dl-name">Get Lucky — Daft Punk</div>
+            <div class="dl-sub"><span class="src-tag">YouTube</span><span>MP3 · 320k · 4:08</span></div>
+          </div>
+          <div class="dl-action">✕</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:20px;color:var(--tx-faint);font-size:12px">
+        <div style="width:36px;height:36px;border-radius:50%;border:1px dashed var(--line-2);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px">+</div>
+        Drop URL or paste above
+      </div>
+    </div>
+
+    <div class="dl-footer">
+      <button class="btn btn-ghost">Clear done</button>
+      <button class="btn btn-primary">▶ Run Queue</button>
+    </div>
+  </div>
+
+  <!-- Library -->
+  <div class="library-panel">
+    <div class="lib-header">
+      <div class="lib-title">Library</div>
+      <div class="lib-count">816 tracks</div>
+      <div class="spacer"></div>
+      <input class="search-field" placeholder="🔍  Search…">
+    </div>
+
+    <div class="lib-content">
+      <div class="album-section">
+        <div class="section-hdr">Recently Added</div>
+        <div class="album-row">
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#3d7fff,#7c5cff)">🎵</div>
+            <div class="alb-body">
+              <div class="alb-name">Random Access Memories</div>
+              <div class="alb-artist">Daft Punk</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#f85149,#d2a022)">🎵</div>
+            <div class="alb-body">
+              <div class="alb-name">GNX</div>
+              <div class="alb-artist">Kendrick Lamar</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#3fb98a,#3d7fff)">🎵</div>
+            <div class="alb-body">
+              <div class="alb-name">HIT ME HARD AND SOFT</div>
+              <div class="alb-artist">Billie Eilish</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#a78bff,#f85149)">🎵</div>
+            <div class="alb-body">
+              <div class="alb-name">After Hours</div>
+              <div class="alb-artist">The Weeknd</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#d2a022,#f85149)">🎵</div>
+            <div class="alb-body">
+              <div class="alb-name">Thriller</div>
+              <div class="alb-artist">Michael Jackson</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="album-section">
+        <div class="section-hdr">Podcasts</div>
+        <div class="album-row">
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#3d7fff44,#0a0e15)">🎙</div>
+            <div class="alb-body">
+              <div class="alb-name">True Crime Sverige</div>
+              <div class="alb-artist">190 episodes</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#7c5cff44,#0a0e15)">🎙</div>
+            <div class="alb-body">
+              <div class="alb-name">Darknet Diaries</div>
+              <div class="alb-artist">140 episodes</div>
+            </div>
+          </div>
+          <div class="alb">
+            <div class="alb-cover" style="background:linear-gradient(135deg,#3fb98a44,#0a0e15)">🎙</div>
+            <div class="alb-body">
+              <div class="alb-name">Lex Fridman Podcast</div>
+              <div class="alb-artist">420 episodes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating glass player -->
+    <div class="player-float">
+      <div class="pf-art"></div>
+      <div class="pf-info">
+        <div class="pf-title">Get Lucky (feat. Pharrell Williams)</div>
+        <div class="pf-artist">Daft Punk</div>
+      </div>
+      <div class="pf-center">
+        <div class="pf-btns">
+          <button class="pf-ctrl">⏮</button>
+          <button class="pf-play">⏸</button>
+          <button class="pf-ctrl">⏭</button>
+        </div>
+        <div class="pf-scrub">
+          <span>1:42</span>
+          <div class="pf-track"><div class="pf-progress"></div></div>
+          <span>4:08</span>
+        </div>
+      </div>
+      <div class="pf-vol">
+        🔊
+        <div class="pf-vbar"><div class="pf-vfill"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
