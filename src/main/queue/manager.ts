@@ -98,6 +98,12 @@ const TITLE_NOISE = [
   /\s*[\[(（][^\]）)]*?\b(?:mv|m\/v|pv|p\/v|ncs\s*release|no\s*copyright|free\s*download)\b[^\]）)]*?[\]）)]/gi,
   // Bare bracketed blocks with only very short noise content like [HD], [4K], (Official)
   /\s*[\[(（]\s*(?:hd|4k|uhd|fhd|official|explicit|mv|ncs)\s*[\]）)]/gi,
+  // Scene/genre tags in brackets: [FREE], [wave/phonk], [nightdrive], [lofi], [type beat], etc.
+  /\s*\[[^\]]*?\b(?:free|type\s*beat|wave|phonk|nightdrive|lofi|lo-?fi|drill|trap|rage|pluggnb|plugg|hyperpop|emo\s*rap|dark\s*trap|cloud\s*rap|bedroom\s*pop|vaporwave|synthwave|darkwave|chillwave|shoegaze|ambient)\b[^\]]*?\]/gi,
+  // Standalone [FREE] or [FREE BEAT] at start or anywhere
+  /\s*\[FREE[^\]]*?\]/gi,
+  // Remix/version credits in parens that aren't featuring: (X Remix), (X REMIX), (X Edit), (X Flip)
+  /\s*\([^)]*?\b(?:remix|bootleg|edit|flip|rework|mashup|re-?mix)\b[^)]*?\)/gi,
   // Trailing unbracketed noise after a pipe or em-dash
   /\s*[|｜]\s*.{0,80}$/g,
   // "ft." / "feat." featuring credit — keep it on title but normalise later (don't strip)
