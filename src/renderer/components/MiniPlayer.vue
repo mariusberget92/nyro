@@ -111,13 +111,22 @@ watch(() => (player as any).currentLyricIndex, () => {
   })
 })
 
+// Connect the audio element to the Web Audio graph when it first appears.
+// The <audio> element lives inside v-if="player.currentTrack", so it may not
+// exist at onMounted time — watch for it becoming non-null.
+watch(audio, (el) => {
+  if (el && !audioConnected) {
+    el.volume = player.volume
+    connectAudioElement(el)
+    audioConnected = true
+  }
+})
+
 onMounted(() => {
-  if (audio.value) {
+  if (audio.value && !audioConnected) {
     audio.value.volume = player.volume
-    if (!audioConnected) {
-      connectAudioElement(audio.value)
-      audioConnected = true
-    }
+    connectAudioElement(audio.value)
+    audioConnected = true
   }
   if (sleepTick) clearInterval(sleepTick)
   sleepTick = setInterval(() => player.tickSleepTimer(), 5000)

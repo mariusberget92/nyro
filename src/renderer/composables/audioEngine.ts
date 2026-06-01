@@ -79,6 +79,15 @@ export const fxSettings = reactive<FxSettings>(load('nyro-fx', defaultFx))
 if (eqSettings.gains.length !== EQ_BANDS.length) eqSettings.gains = EQ_BANDS.map(() => 0)
 if (mbSettings.bands.length !== MB_BANDS.length)  mbSettings.bands = MB_BANDS.map(() => ({ threshold: -24, ratio: 4, attack: 10, release: 200, makeupGain: 0, enabled: true }))
 
+// Ensure all fx sub-objects exist (guard against stale localStorage from older versions)
+const _fxDef = defaultFx()
+if (!fxSettings.bassBoost)   fxSettings.bassBoost   = _fxDef.bassBoost
+if (!fxSettings.treble)      fxSettings.treble      = _fxDef.treble
+if (!fxSettings.stereoWidth) fxSettings.stereoWidth = _fxDef.stereoWidth
+if (!fxSettings.reverb)      fxSettings.reverb      = _fxDef.reverb
+if (!fxSettings.crossfeed)   fxSettings.crossfeed   = _fxDef.crossfeed
+if (!fxSettings.limiter)     fxSettings.limiter     = _fxDef.limiter
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Audio graph (null until connectAudioElement is called)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,9 +121,30 @@ function db(v: number) { return Math.pow(10, v / 20) }
 export function connectAudioElement(el: HTMLAudioElement) {
   if (source) return  // already wired
 
-  ctx = new AudioContext()
+  ctx    = new AudioContext()
+  source = ctx.createMediaElementSource(el)
 
-  source     = ctx.createMediaElementSource(el)
+  analyserNode = ctx.createAnalyser()
+  analyserNode.fftSize = 128
+  analyserNode.smoothingTimeConstant = 0.75
+
+  try {
+    _buildGraph()
+  } catch (e) {
+    console.error('[audioEngine] graph build failed — falling back to direct connection', e)
+    source.connect(analyserNode)
+    analyserNode.connect(ctx.destination)
+  }
+
+  if (ctx.state === 'suspended') ctx.resume()
+  applyFxBassBoost()
+  applyFxTreble()
+  applyFxLimiter()
+}
+
+function _buildGraph() {
+  if (!ctx || !source || !analyserNode) return
+
   preampNode = ctx.createGain()
   preampNode.gain.value = db(eqSettings.preampGain)
 
@@ -179,27 +209,16 @@ export function connectAudioElement(el: HTMLAudioElement) {
   limiterNode.release.value = 0.1
   limiterNode.threshold.value = fxSettings.limiter.enabled ? fxSettings.limiter.threshold : 0
 
-  analyserNode = ctx.createAnalyser()
-  analyserNode.fftSize = 128
-  analyserNode.smoothingTimeConstant = 0.75
-
   // Wire: source → preamp → eq[0..9] → mbInput → mbMerge → bass → treble → limiter → analyser → dest
-  source.connect(preampNode)
+  source!.connect(preampNode)
   let node: AudioNode = preampNode
   for (const f of eqFilters) { node.connect(f); node = f }
   node.connect(mbInput)
   mbMerge.connect(bassFilter)
   bassFilter.connect(trebleFilter)
   trebleFilter.connect(limiterNode)
-  limiterNode.connect(analyserNode)
-  analyserNode.connect(ctx.destination)
-
-  if (ctx.state === 'suspended') ctx.resume()
-
-  // Apply persisted FX settings
-  applyFxBassBoost()
-  applyFxTreble()
-  applyFxLimiter()
+  limiterNode.connect(analyserNode!)
+  analyserNode!.connect(ctx.destination)
 }
 
 export function resumeContext() { if (ctx?.state === 'suspended') ctx.resume() }
