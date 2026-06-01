@@ -9,10 +9,8 @@ const route  = useRoute()
 const queue  = useQueueStore()
 const binary = useBinaryStore()
 
-const pendingCount = computed(() => queue.pendingItems.length)
-const activeCount  = computed(() => queue.activeItems.length)
-const totalBadge   = computed(() => {
-  const n = pendingCount.value + activeCount.value
+const totalBadge = computed(() => {
+  const n = queue.activeItems.length
   return n > 0 ? (n > 99 ? '99+' : String(n)) : null
 })
 
