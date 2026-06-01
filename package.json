@@ -20,6 +20,7 @@
     "electron-store": "^8.1.0",
     "node-id3": "^0.2.6",
     "pinia": "^2.1.0",
+    "sharp": "^0.34.5",
     "uuid": "^11.1.0",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0",
@@ -97,6 +98,9 @@
     "files": [
       "out/**/*",
       "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/sharp/**/*"
     ]
   }
 }
