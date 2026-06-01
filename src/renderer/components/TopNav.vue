@@ -32,11 +32,6 @@ function isActive(path: string) {
   <header class="topbar">
     <!-- Titlebar row -->
     <div class="titlebar-row">
-      <div class="traffic">
-        <div class="dot r" />
-        <div class="dot y" />
-        <div class="dot g" />
-      </div>
       <div class="logo-area">
         <div class="logo-mark">
           <svg width="16" height="16" viewBox="0 0 120 120" fill="none">
@@ -107,10 +102,6 @@ function isActive(path: string) {
   gap: 10px;
   -webkit-app-region: drag;
 }
-.traffic { display: flex; gap: 6px; -webkit-app-region: no-drag; }
-.dot { width: 12px; height: 12px; border-radius: 50%; }
-.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
-
 .logo-area { display: flex; align-items: center; gap: 8px; -webkit-app-region: no-drag; }
 .logo-mark {
   width: 26px; height: 26px; border-radius: 7px;

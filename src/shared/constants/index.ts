@@ -26,6 +26,7 @@ export const IPC_CHANNELS = {
   LIBRARY_SCAN:          'library:scan',
   LIBRARY_GET:           'library:get',
   LIBRARY_GET_LRC:       'library:get-lrc',
+  LIBRARY_FETCH_LRC:     'library:fetch-lrc',
   LIBRARY_RENAME_FOLDER: 'library:rename-folder',
   LIBRARY_SET_COVER:     'library:set-cover',
   SHELL_SHOW_IN_FOLDER:  'shell:show-in-folder',

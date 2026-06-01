@@ -7,6 +7,7 @@ import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
 import { scanLibrary } from '../services/library'
 import type { LibraryScanResult } from '@shared/types/library'
 import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, unlinkSync, mkdirSync, copyFileSync } from 'fs'
+import { fetchLyrics } from '../services/lyrics'
 import { createHash } from 'crypto'
 import NodeID3 from 'node-id3'
 
@@ -145,6 +146,21 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   // library:get-lrc — read a .lrc sidecar file and return its content
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET_LRC, (_event, lrcPath: string) => {
     try { return readFileSync(lrcPath, 'utf8') } catch { return null }
+  })
+
+  // library:fetch-lrc — fetch lyrics on-demand for a track that has no sidecar yet
+  ipcMain.handle(IPC_CHANNELS.LIBRARY_FETCH_LRC, async (_event, args: { trackPath: string; artist: string; title: string; album?: string; duration?: number }) => {
+    const lrcPath = args.trackPath.replace(/\.[^.]+$/, '.lrc')
+    if (existsSync(lrcPath)) {
+      try { return { lrcPath, content: readFileSync(lrcPath, 'utf8') } } catch { /* fall through */ }
+    }
+    const result = await fetchLyrics(args.artist, args.title, args.album, args.duration)
+    if (result.synced) {
+      try { writeFileSync(lrcPath, result.synced, 'utf8') } catch { /* non-fatal */ }
+      return { lrcPath, content: result.synced }
+    }
+    if (result.plain) return { lrcPath: null, content: result.plain }
+    return null
   })
 
   // library:rename-folder — rename an album or podcast folder on disk

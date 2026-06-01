@@ -192,6 +192,19 @@ function getCtx(): AudioContext {
 
 // ── Build the node graph ──────────────────────────────────────────────────────
 
+function ensureEqFilters() {
+  if (eqFilters.length) return
+  const c = getCtx()
+  eqFilters = EQ_BANDS.map((def, i) => {
+    const f = c.createBiquadFilter()
+    f.type = def.type
+    f.frequency.value = def.freq
+    f.Q.value = def.Q
+    f.gain.value = eqSettings.gains[i]
+    return f
+  })
+}
+
 function buildGraph(audioEl: HTMLAudioElement) {
   const c = getCtx()
 
@@ -205,13 +218,13 @@ function buildGraph(audioEl: HTMLAudioElement) {
   mbBypass  = c.createGain()
 
   // ── EQ filter chain ──────────────────────────────────────────────
-  eqFilters = EQ_BANDS.map((def, i) => {
-    const f = c.createBiquadFilter()
+  ensureEqFilters()
+  EQ_BANDS.forEach((def, i) => {
+    const f = eqFilters[i]
     f.type = def.type
     f.frequency.value = def.freq
     f.Q.value = def.Q
     f.gain.value = eqSettings.gains[i]
-    return f
   })
 
   // source → preamp → [chain of EQ filters] → eqBypass → mbInput
@@ -431,6 +444,7 @@ function getFreqArray(): Float32Array {
 }
 
 export function getEqResponse(): Float32Array {
+  ensureEqFilters()
   const freqs = getFreqArray()
   const combined = new Float32Array(FREQ_POINTS).fill(1)
   const mag   = new Float32Array(FREQ_POINTS)

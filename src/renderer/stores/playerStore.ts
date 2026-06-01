@@ -101,9 +101,23 @@ export const usePlayerStore = defineStore('player', {
     toggleLyrics() { this.showLyrics = !this.showLyrics },
 
     async _loadLrc(track?: LibraryTrack) {
-      if (!track?.lrcPath) { this.lrcRaw = null; return }
+      if (!track) { this.lrcRaw = null; return }
       try {
-        this.lrcRaw = await window.nyro.invoke<string | null>('library:get-lrc', track.lrcPath)
+        if (track.lrcPath) {
+          this.lrcRaw = await window.nyro.invoke<string | null>('library:get-lrc', track.lrcPath)
+          return
+        }
+        // No sidecar — try fetching on-demand from lrclib
+        const res = await window.nyro.invoke<{ lrcPath: string | null; content: string } | null>(
+          'library:fetch-lrc',
+          { trackPath: track.path, artist: track.artist, title: track.title, album: track.album }
+        )
+        if (res?.content) {
+          this.lrcRaw = res.content
+          if (res.lrcPath) track.lrcPath = res.lrcPath
+        } else {
+          this.lrcRaw = null
+        }
       } catch {
         this.lrcRaw = null
       }
