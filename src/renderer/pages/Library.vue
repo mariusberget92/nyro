@@ -104,8 +104,11 @@ function coverUrl(path?: string) {
   return `nyro-file://local?p=${encodeURIComponent(path)}`
 }
 
-// Returns up to 4 unique cover URLs for a 2x2 grid; empty array = no covers at all
+// Returns up to 4 unique cover URLs across album tracks.
+// 0 = no art; 1 = single full-bleed; 2-4 = mosaic grid
+const gridCoversCache = new WeakMap<LibraryAlbum, string[]>()
 function gridCovers(album: LibraryAlbum): string[] {
+  if (gridCoversCache.has(album)) return gridCoversCache.get(album)!
   const seen = new Set<string>()
   const urls: string[] = []
   for (const t of album.tracks) {
@@ -114,6 +117,7 @@ function gridCovers(album: LibraryAlbum): string[] {
     if (u && !seen.has(u)) { seen.add(u); urls.push(u) }
     if (urls.length === 4) break
   }
+  gridCoversCache.set(album, urls)
   return urls
 }
 
@@ -350,9 +354,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
               <svg v-if="isAlbumSelected(album)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div class="card-art">
-              <!-- Single cover or 2x2 mosaic -->
-              <template v-if="album.coverPath">
-                <div class="art-single" :style="{ backgroundImage: `url('${coverUrl(album.coverPath)}')` }" />
+              <template v-if="gridCovers(album).length === 1">
+                <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(album)[0]}')` }" />
               </template>
               <template v-else-if="gridCovers(album).length >= 2">
                 <div class="art-grid">
@@ -432,8 +435,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
               <svg v-if="isAlbumSelected(show)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div class="card-art">
-              <template v-if="show.coverPath">
-                <div class="art-single" :style="{ backgroundImage: `url('${coverUrl(show.coverPath)}')` }" />
+              <template v-if="gridCovers(show).length === 1">
+                <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(show)[0]}')` }" />
               </template>
               <template v-else-if="gridCovers(show).length >= 2">
                 <div class="art-grid">
@@ -532,8 +535,8 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
           <template v-if="detailAlbum">
             <div class="detail-header">
               <div class="detail-art">
-                <template v-if="detailAlbum.coverPath">
-                  <div class="art-single" :style="{ backgroundImage: `url('${coverUrl(detailAlbum.coverPath)}')` }" />
+                <template v-if="gridCovers(detailAlbum).length === 1">
+                  <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(detailAlbum)[0]}')` }" />
                 </template>
                 <template v-else-if="gridCovers(detailAlbum).length >= 2">
                   <div class="art-grid">
