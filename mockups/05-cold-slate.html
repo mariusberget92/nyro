@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyro — Concept 5: Cold Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  /* Cold blue-slate palette — not dark, not light. Steel & ice. */
+  --bg-canvas: #1c2333;
+  --bg-0:     #202840;
+  --bg-1:     #273050;
+  --bg-2:     #2e3a5e;
+  --bg-3:     #374470;
+  --bg-4:     #404f80;
+  --tx:       #d8e4f8;
+  --tx-dim:   #8fa3cc;
+  --tx-faint: #546080;
+  --line:     rgba(160,190,255,0.10);
+  --line-2:   rgba(160,190,255,0.18);
+  --accent:        #5b9bff;
+  --accent-2:      #8b77ff;
+  --accent-grad:   linear-gradient(135deg, #5b9bff, #8b77ff);
+  --ok:    #4dc49a;
+  --bad:   #f07070;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans:    'Inter', sans-serif;
+}
+body { background:var(--bg-canvas); color:var(--tx); font-family:var(--font-sans); font-size:13px; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+/* subtle frost overlay on whole bg */
+body::before { content:''; position:fixed; inset:0; background:linear-gradient(160deg, rgba(91,155,255,.04) 0%, transparent 50%); pointer-events:none; }
+
+.titlebar { height:38px; background:var(--bg-0); border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 16px; gap:8px; flex-shrink:0; }
+.traffic { display:flex; gap:6px; }
+.dot { width:12px; height:12px; border-radius:50%; }
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+
+.app { display:flex; flex:1; overflow:hidden; }
+
+/* Wide sidebar */
+.sidebar { width:230px; background:var(--bg-0); border-right:1px solid var(--line); display:flex; flex-direction:column; flex-shrink:0; }
+.logo-row { padding:18px 16px 14px; display:flex; align-items:center; gap:10px; }
+.logo-mark { width:34px; height:34px; border-radius:9px; background:var(--accent-grad); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px -6px rgba(91,155,255,.55); flex-shrink:0; }
+.logo-text { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--tx); }
+.logo-sub  { font-size:10px; color:var(--tx-faint); margin-top:1px; }
+
+.sb-label { font-size:10px; font-weight:600; color:var(--tx-faint); text-transform:uppercase; letter-spacing:.08em; padding:10px 16px 5px; }
+.nav-item  { display:flex; align-items:center; gap:10px; padding:8px 12px; margin:1px 8px; border-radius:8px; color:var(--tx-dim); cursor:pointer; font-size:13px; font-weight:500; transition:all .15s; }
+.nav-item:hover  { background:var(--bg-2); color:var(--tx); }
+.nav-item.active { background:var(--bg-2); color:var(--tx); }
+.nav-item.active .ni-icon { color:var(--accent); }
+.ni-icon { width:16px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.nav-badge { margin-left:auto; background:var(--accent-grad); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
+
+.sb-playlists { flex:1; overflow-y:auto; padding-bottom:8px; }
+.pl-item { display:flex; align-items:center; gap:8px; padding:6px 20px; cursor:pointer; color:var(--tx-faint); font-size:12px; border-radius:0; transition:all .12s; }
+.pl-item:hover { color:var(--tx-dim); background:var(--bg-2); }
+.pl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+.sb-bottom { padding:10px 8px; border-top:1px solid var(--line); }
+
+/* Main */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.toolbar { height:52px; background:var(--bg-1); border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 20px; gap:10px; flex-shrink:0; }
+.toolbar-title { font-family:var(--font-display); font-size:17px; font-weight:700; color:var(--tx); }
+.spacer { flex:1; }
+.btn { border:none; cursor:pointer; font-family:var(--font-sans); font-size:12px; font-weight:600; border-radius:7px; padding:7px 14px; transition:all .15s; }
+.btn-ghost   { background:var(--bg-3); color:var(--tx-dim); }
+.btn-ghost:hover { background:var(--bg-4); color:var(--tx); }
+.btn-primary { background:var(--accent-grad); color:#fff; box-shadow:0 4px 14px -4px rgba(91,155,255,.5); }
+
+.content { flex:1; overflow-y:auto; padding:20px; }
+
+/* Queue items */
+.q-item { background:var(--bg-1); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+.q-item.dl { border-color:rgba(91,155,255,.22); background:rgba(91,155,255,.05); }
+.q-thumb { width:44px; height:44px; border-radius:7px; background:var(--bg-3); flex-shrink:0; }
+.q-info  { flex:1; min-width:0; }
+.q-title { font-size:13px; font-weight:600; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.q-sub   { font-size:11px; color:var(--tx-faint); margin-top:2px; display:flex; gap:5px; align-items:center; }
+.src-tag { background:var(--bg-3); border:1px solid var(--line-2); padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; color:var(--tx-dim); }
+.q-prog  { margin-top:8px; }
+.q-bar   { height:3px; background:var(--bg-4); border-radius:2px; }
+.q-fill  { height:100%; background:var(--accent-grad); border-radius:2px; }
+.q-pinfo { display:flex; justify-content:space-between; margin-top:4px; font-size:10px; color:var(--tx-faint); }
+.q-speed { font-weight:600; color:var(--accent); }
+.status-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.status-dot.active  { background:var(--accent); box-shadow:0 0 6px var(--accent); animation:pulse 1.5s infinite; }
+.status-dot.done    { background:var(--ok); }
+.status-dot.pending { background:var(--tx-faint); }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.q-del { width:26px; height:26px; border-radius:6px; background:var(--bg-3); border:1px solid var(--line); color:var(--tx-faint); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; flex-shrink:0; }
+
+/* Mini player */
+.player { height:64px; background:var(--bg-0); border-top:1px solid var(--line-2); display:flex; align-items:center; padding:0 16px; gap:12px; flex-shrink:0; }
+.p-art  { width:40px; height:40px; border-radius:7px; background:var(--accent-grad); flex-shrink:0; }
+.p-info { flex-shrink:0; width:180px; }
+.p-title{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-artist{font-size:11px; color:var(--tx-faint); margin-top:1px; }
+.p-ctrls{ display:flex; align-items:center; gap:8px; }
+.ctrl   { background:none; border:none; color:var(--tx-dim); cursor:pointer; font-size:16px; }
+.play   { width:36px; height:36px; border-radius:50%; background:var(--accent-grad); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 4px 14px -4px rgba(139,119,255,.6); }
+.scrub  { flex:1; }
+.scrub-bar { height:4px; background:var(--bg-3); border-radius:2px; }
+.scrub-fill{ height:100%; width:40%; background:var(--accent-grad); border-radius:2px; }
+.scrub-times{ display:flex; justify-content:space-between; font-size:10px; color:var(--tx-faint); margin-top:4px; }
+.vol    { display:flex; align-items:center; gap:6px; color:var(--tx-faint); font-size:12px; }
+.vol-bar{ width:60px; height:4px; background:var(--bg-3); border-radius:2px; }
+.vol-fill{height:100%;width:70%;background:var(--bg-4);border-radius:2px;}
+
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <div class="traffic"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+</div>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 120 120" fill="none"><g stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"><path d="M38 36V79"/><path d="M38 36L82 84"/><path d="M82 36V72"/><path d="M70 72L82 84L94 72"/><path d="M49 100H83" stroke-width="12"/></g></svg>
+      </div>
+      <div><div class="logo-text">Nyro</div><div class="logo-sub">Music Downloader</div></div>
+    </div>
+
+    <div class="sb-label">Main</div>
+    <div class="nav-item"><span class="ni-icon">⬡</span> Dashboard</div>
+    <div class="nav-item active"><span class="ni-icon" style="color:var(--accent)">↓</span> Queue <span class="nav-badge">3</span></div>
+    <div class="nav-item"><span class="ni-icon">♪</span> Library</div>
+    <div class="nav-item"><span class="ni-icon">🎙</span> Podcasts</div>
+
+    <div class="sb-label">Playlists</div>
+    <div class="sb-playlists">
+      <div class="pl-item"><div class="pl-dot" style="background:var(--accent-grad);background:var(--accent)"></div> Chill Vibes</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--ok)"></div> Morning Run</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--bad)"></div> Late Night</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--accent-2)"></div> Workout Mix</div>
+    </div>
+
+    <div class="sb-bottom">
+      <div class="nav-item" style="margin:0"><span class="ni-icon">⚙</span> Settings</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="toolbar">
+      <div class="toolbar-title">Download Queue</div>
+      <span style="color:var(--tx-faint);font-size:12px">3 items</span>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost">Clear done</button>
+      <button class="btn btn-primary">▶ Run Queue</button>
+    </div>
+    <div class="content">
+      <div class="q-item dl">
+        <div class="q-thumb" style="background:linear-gradient(135deg,#5b9bff,#8b77ff)"></div>
+        <div class="q-info">
+          <div class="q-title">Kendrick Lamar — Not Like Us</div>
+          <div class="q-sub"><span class="src-tag">YouTube</span> MP3 · 320k</div>
+          <div class="q-prog"><div class="q-bar"><div class="q-fill" style="width:68%"></div></div>
+          <div class="q-pinfo"><span>Downloading… 68%</span><span class="q-speed">2.3 MB/s</span></div></div>
+        </div>
+        <div class="status-dot active"></div>
+        <div class="q-del">✕</div>
+      </div>
+      <div class="q-item" style="opacity:.7">
+        <div class="q-thumb" style="background:var(--bg-3)"></div>
+        <div class="q-info">
+          <div class="q-title">Billie Eilish — Birds of a Feather</div>
+          <div class="q-sub"><span class="src-tag">YouTube</span> MP3 · 320k</div>
+        </div>
+        <div class="status-dot pending"></div>
+        <div class="q-del">✕</div>
+      </div>
+      <div class="q-item">
+        <div class="q-thumb" style="background:linear-gradient(135deg,rgba(77,196,154,.3),rgba(91,155,255,.3))"></div>
+        <div class="q-info">
+          <div class="q-title">Daft Punk — Get Lucky (feat. Pharrell Williams)</div>
+          <div class="q-sub"><span class="src-tag">YouTube</span> MP3 · 320k · 4:08</div>
+        </div>
+        <div class="status-dot done"></div>
+        <div class="q-del">✕</div>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:var(--bg-1);border:1px dashed var(--line-2);border-radius:10px;text-align:center;color:var(--tx-faint);font-size:13px">
+        <div style="font-size:22px;margin-bottom:6px">↓</div>Drop a URL here or paste one above
+      </div>
+    </div>
+    <div class="player">
+      <div class="p-art"></div>
+      <div class="p-info"><div class="p-title">Get Lucky (feat. Pharrell Williams)</div><div class="p-artist">Daft Punk</div></div>
+      <div class="p-ctrls">
+        <button class="ctrl">⏮</button>
+        <button class="play">⏸</button>
+        <button class="ctrl">⏭</button>
+      </div>
+      <div class="scrub">
+        <div class="scrub-bar"><div class="scrub-fill"></div></div>
+        <div class="scrub-times"><span>1:42</span><span>4:08</span></div>
+      </div>
+      <div class="vol">🔊<div class="vol-bar"><div class="vol-fill"></div></div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
