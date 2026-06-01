@@ -11,8 +11,8 @@ const player = usePlayerStore()
 const views  = useViewStore()
 
 // Load tracks on first mount; also re-check when navigating back via KeepAlive
-onMounted(() => { if (lib.tracks.length === 0) lib.load() })
-onActivated(() => { if (lib.tracks.length === 0) lib.load() })
+onMounted(() => lib.load())
+onActivated(() => lib.load())
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
@@ -233,8 +233,12 @@ async function pickCoverForAlbum(album: LibraryAlbum, e: Event) {
   for (const track of album.tracks) {
     await lib.setCover(track.path, imagePath)
   }
-  // Force cover path update on the album object for reactivity
-  album.coverPath = album.tracks.find(t => t.coverPath)?.coverPath
+  // Re-sync selected to the fresh getter object so the detail panel updates immediately
+  await nextTick()
+  const fresh = [...lib.albums, ...lib.podcasts].find(a => a.name === album.name)
+  if (fresh && selected.value && (selected.value as LibraryAlbum).name === album.name) {
+    selected.value = fresh
+  }
 }
 
 async function pickCoverForTrack(track: LibraryTrack, e: Event) {

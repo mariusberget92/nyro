@@ -86,5 +86,5 @@ const MODES: { mode: ViewMode; title: string }[] = [
   transition: background 0.1s, color 0.1s;
 }
 .vs-btn:hover { background: var(--bg-3); color: var(--tx-dim); }
-.vs-btn.active { background: var(--bg-0); color: var(--accent); }
+.vs-btn.active { background: var(--accent-grad); color: #fff; box-shadow: 0 2px 8px -2px rgba(61,127,255,0.5); }
 </style>
