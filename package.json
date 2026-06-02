@@ -1,6 +1,6 @@
 {
   "name": "nyro",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "YouTube audio downloader with queue management",
   "main": "out/main/index.js",
   "author": {
