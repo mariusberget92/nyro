@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onActivated } from 'vue'
+import { RecycleScroller } from 'vue-virtual-scroller'
 import { useLibraryStore } from '../stores/libraryStore'
 import { usePlayerStore } from '../stores/playerStore'
 import { useViewStore } from '../stores/viewStore'
@@ -13,6 +14,13 @@ const views  = useViewStore()
 // Load tracks on first mount; also re-check when navigating back via KeepAlive
 onMounted(() => lib.load())
 onActivated(() => lib.load())
+
+// Item height for virtual track/video rows — matches the CSS padding per view mode
+const trackItemSize = computed(() => {
+  if (views.library === 'small') return 40
+  if (views.library === 'large' || views.library === 'xlarge') return 52
+  return 44
+})
 
 type View = 'artists' | 'albums' | 'podcasts' | 'tracks' | 'videos'
 const view       = ref<View>('albums')
@@ -341,7 +349,7 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
     <div v-else class="lib-body">
 
       <!-- ── LIST panel ─────────────────────────────── -->
-      <div class="list-panel" :class="{ narrow: !!selected, [`view-${views.library}`]: true }">
+      <div class="list-panel" :class="{ narrow: !!selected, [`view-${views.library}`]: true, 'virtual-mode': view === 'tracks' || view === 'videos' || view === 'artists' }">
 
         <!-- Albums grid -->
         <div v-if="view === 'albums'" class="grid">
@@ -404,25 +412,34 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
           </div>
         </div>
 
-        <!-- Artists list -->
-        <div v-else-if="view === 'artists'" class="artist-list">
-          <button
-            v-for="artist in filteredArtists" :key="artist.name"
-            class="artist-row" :class="{ active: selected === artist }"
-            @click="selected = selected === artist ? null : artist"
-            @dblclick="playArtist(artist)"
-          >
-            <div class="artist-avatar" :style="coverUrl(artist.coverPath) ? { backgroundImage: `url('${coverUrl(artist.coverPath)}')` } : {}">
-              <svg v-if="!artist.coverPath" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
+        <!-- Artists list (virtualised) -->
+        <RecycleScroller
+          v-else-if="view === 'artists'"
+          class="vscroll"
+          :items="filteredArtists"
+          :item-size="58"
+          key-field="name"
+        >
+          <template #default="{ item: artist }">
+            <div class="vscroll-item">
+              <button
+                class="artist-row" :class="{ active: selected === artist }"
+                @click="selected = selected === artist ? null : artist"
+                @dblclick="playArtist(artist)"
+              >
+                <div class="artist-avatar" :style="coverUrl(artist.coverPath) ? { backgroundImage: `url('${coverUrl(artist.coverPath)}')` } : {}">
+                  <svg v-if="!artist.coverPath" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="artist-info">
+                  <span class="artist-name">{{ artist.name }}</span>
+                  <span class="artist-meta">{{ artist.albums.length }} album{{ artist.albums.length !== 1 ? 's' : '' }} · {{ artist.tracks.length }} tracks</span>
+                </div>
+              </button>
             </div>
-            <div class="artist-info">
-              <span class="artist-name">{{ artist.name }}</span>
-              <span class="artist-meta">{{ artist.albums.length }} album{{ artist.albums.length !== 1 ? 's' : '' }} · {{ artist.tracks.length }} tracks</span>
-            </div>
-          </button>
-        </div>
+          </template>
+        </RecycleScroller>
 
         <!-- Podcasts grid -->
         <div v-else-if="view === 'podcasts'" class="grid">
@@ -486,45 +503,53 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
           </div>
         </div>
 
-        <!-- Flat track list -->
-        <div v-else-if="view === 'tracks' || view === 'videos'" class="track-list">
-          <div
-            v-for="(track, i) in (view === 'tracks' ? filteredTracks : filteredVideos)"
-            :key="track.id"
-            class="track-row"
-            :class="{ playing: player.currentTrack?.id === track.id, 'sel-active': isTrackSelected(track) }"
-            @click="selectionMode && toggleTrack(track)"
-            @dblclick="!selectionMode && playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
-          >
-            <div v-if="selectionMode" class="tr-checkbox" :class="{ checked: isTrackSelected(track) }">
-              <svg v-if="isTrackSelected(track)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <!-- Flat track / video list (virtualised) -->
+        <RecycleScroller
+          v-else-if="view === 'tracks' || view === 'videos'"
+          class="vscroll"
+          :items="view === 'tracks' ? filteredTracks : filteredVideos"
+          :item-size="trackItemSize"
+          key-field="id"
+        >
+          <template #default="{ item: track, index }">
+            <div class="vscroll-item">
+              <div
+                class="track-row"
+                :class="{ playing: player.currentTrack?.id === track.id, 'sel-active': isTrackSelected(track) }"
+                @click="selectionMode && toggleTrack(track)"
+                @dblclick="!selectionMode && playTrack(track, view === 'tracks' ? filteredTracks : filteredVideos)"
+              >
+                <div v-if="selectionMode" class="tr-checkbox" :class="{ checked: isTrackSelected(track) }">
+                  <svg v-if="isTrackSelected(track)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <span v-else class="tr-num">{{ index + 1 }}</span>
+                <div class="tr-thumb" :style="coverUrl(track.coverPath) ? { backgroundImage: `url('${coverUrl(track.coverPath)}')` } : {}">
+                  <svg v-if="!track.coverPath" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
+                  </svg>
+                </div>
+                <div class="tr-info">
+                  <span class="tr-title">{{ track.title }}</span>
+                  <span class="tr-artist">{{ track.artist }}</span>
+                  <span class="tr-path" :title="track.path">{{ track.path }}</span>
+                </div>
+                <span class="tr-album">{{ track.album }}</span>
+                <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
+                <button class="reveal-btn" title="Link to folder…" @click.stop="linkTrackToFolder(track)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                  </svg>
+                </button>
+                <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <span v-else class="tr-num">{{ i + 1 }}</span>
-            <div class="tr-thumb" :style="coverUrl(track.coverPath) ? { backgroundImage: `url('${coverUrl(track.coverPath)}')` } : {}">
-              <svg v-if="!track.coverPath" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
-              </svg>
-            </div>
-            <div class="tr-info">
-              <span class="tr-title">{{ track.title }}</span>
-              <span class="tr-artist">{{ track.artist }}</span>
-              <span class="tr-path" :title="track.path">{{ track.path }}</span>
-            </div>
-            <span class="tr-album">{{ track.album }}</span>
-            <span class="tr-dur">{{ fmtDur(track.duration) }}</span>
-            <button class="reveal-btn" title="Link to folder…" @click.stop="linkTrackToFolder(track)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-              </svg>
-            </button>
-            <button class="reveal-btn" title="Show in Explorer" @click.stop="revealFile(track.path)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+          </template>
+        </RecycleScroller>
 
       </div>
 
@@ -837,6 +862,10 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
 .lib-body { flex: 1; display: flex; overflow: hidden; }
 .list-panel { flex: 1; overflow-y: auto; padding: 16px; transition: flex 0.2s; }
 .list-panel.narrow { flex: 0 0 340px; border-right: 1px solid var(--line); }
+/* Virtual-scroll views own their scroll — parent must not clip or double-scroll */
+.list-panel.virtual-mode { overflow: hidden; padding: 0; }
+.vscroll { height: 100%; }
+.vscroll-item { padding: 0 16px; }
 
 /* ── Album / Podcast grid ──────────────────────── */
 .grid {
