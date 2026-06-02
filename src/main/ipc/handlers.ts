@@ -1,33 +1,16 @@
-import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { IPC_CHANNELS } from '@shared/constants'
 import { queueManager } from '../queue/manager'
 import { loadSettings, updateSettings } from '../storage/store'
-import { searchPodcasts, getPodcastSeries, getEpisode } from '../services/taddy'
+import { searchPodcasts, getPodcastSeries } from '../services/taddy'
 import { scanLibrary } from '../services/library'
-import type { LibraryScanResult } from '@shared/types/library'
-import { readFileSync, writeFileSync, existsSync, renameSync, readdirSync, unlinkSync, mkdirSync, copyFileSync } from 'fs'
+import type { LibraryTrack } from '@shared/types/library'
+import { readFileSync, writeFileSync, existsSync, renameSync, unlinkSync, mkdirSync } from 'fs'
 import { fetchLyrics } from '../services/lyrics'
 import { createHash } from 'crypto'
 import NodeID3 from 'node-id3'
-
-let libraryCache: LibraryScanResult | null = null
-
-function libraryCachePath() {
-  return join(app.getPath('userData'), 'library-cache.json')
-}
-
-function saveLibraryCache(result: LibraryScanResult) {
-  try { writeFileSync(libraryCachePath(), JSON.stringify(result), 'utf8') } catch {}
-}
-
-function loadLibraryCache(): LibraryScanResult | null {
-  try {
-    const p = libraryCachePath()
-    if (!existsSync(p)) return null
-    return JSON.parse(readFileSync(p, 'utf8'))
-  } catch { return null }
-}
+import { getDb, getAllTracks, updateTracksInFolder, setThumbnail, deleteTrackByPath, hasTracks } from '../database/db'
 
 export function registerIpcHandlers(win: BrowserWindow): void {
   queueManager.setWindow(win)
@@ -127,20 +110,33 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return queueManager.addPodcastEpisode(episodeId, outputFolder, showName)
   })
 
-  // library:scan — walk output folder, read ID3 tags (async to keep main thread responsive)
+  // library:scan — walk output folder, read ID3 tags, store in SQLite
   ipcMain.handle(IPC_CHANNELS.LIBRARY_SCAN, async () => {
     const settings = loadSettings()
     if (!settings.outputFolder) throw new Error('No output folder set.')
-    const cacheDir = join(app.getPath('userData'), 'covers')
-    libraryCache = await scanLibrary(settings.outputFolder, cacheDir)
-    saveLibraryCache(libraryCache)
-    return libraryCache
+    return await scanLibrary(settings.outputFolder, getDb())
   })
 
-  // library:get — return in-memory cache, fall back to disk, or null if never scanned
+  // library:get — return tracks from SQLite; null if never scanned
   ipcMain.handle(IPC_CHANNELS.LIBRARY_GET, () => {
-    if (!libraryCache) libraryCache = loadLibraryCache()
-    return libraryCache
+    const db = getDb()
+    if (!hasTracks(db)) return null
+    const rows = getAllTracks(db)
+    const tracks: LibraryTrack[] = rows.map(row => ({
+      id: row.id,
+      path: row.path,
+      title: row.title,
+      artist: row.artist,
+      album: row.album,
+      year: row.year ?? undefined,
+      trackNumber: row.track_number ?? undefined,
+      genre: row.genre ?? undefined,
+      lrcPath: row.lrc_path ?? undefined,
+      source: row.source as LibraryTrack['source'],
+      coverPath: row.has_thumbnail ? `nyro-thumb://${row.id}` : undefined,
+    }))
+    const scannedAt = rows.reduce((m, r) => Math.max(m, r.scanned_at), 0)
+    return { tracks, scannedAt }
   })
 
   // library:get-lrc — read a .lrc sidecar file and return its content
@@ -163,64 +159,39 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     return null
   })
 
-  // library:rename-folder — rename an album or podcast folder on disk
+  // library:rename-folder — rename an album or podcast folder on disk, update SQLite
   ipcMain.handle(IPC_CHANNELS.LIBRARY_RENAME_FOLDER, (_event, oldPath: string, newName: string) => {
     const parent = join(oldPath, '..')
     const newPath = join(parent, newName)
     if (!existsSync(oldPath)) throw new Error('Folder not found: ' + oldPath)
-    // No-op: renaming to the same name (exact match or case-only change on case-insensitive FS)
     if (oldPath === newPath || oldPath.toLowerCase() === newPath.toLowerCase()) return newPath
     if (existsSync(newPath)) throw new Error('A folder with that name already exists.')
     renameSync(oldPath, newPath)
-    // Patch in-memory cache so the library reflects the rename without a full rescan
-    if (libraryCache) {
-      for (const track of libraryCache.tracks) {
-        if (track.path.startsWith(oldPath + '/') || track.path.startsWith(oldPath + '\\')) {
-          track.path = newPath + track.path.slice(oldPath.length)
-          if (track.coverPath) track.coverPath = newPath + track.coverPath.slice(oldPath.length)
-          track.album = newName
-        }
-      }
-      saveLibraryCache(libraryCache)
-    }
+    updateTracksInFolder(getDb(), oldPath, newPath, newName)
     return newPath
   })
 
-  // library:set-cover — copy image to covers cache, embed in ID3, patch cache
+  // library:set-cover — store cover in SQLite, embed in ID3 tags
   ipcMain.handle(IPC_CHANNELS.LIBRARY_SET_COVER, async (_event, trackPath: string, imagePath: string) => {
-    const cacheDir = join(app.getPath('userData'), 'covers')
-    mkdirSync(cacheDir, { recursive: true })
-    if (!libraryCache) libraryCache = loadLibraryCache()
     const id = createHash('md5').update(trackPath).digest('hex')
-    const srcExt = imagePath.split('.').pop()?.toLowerCase() ?? 'jpg'
-    const destExt = srcExt === 'png' ? 'png' : 'jpg'
-    const destPath = join(cacheDir, `${id}.${destExt}`)
-    copyFileSync(imagePath, destPath)
-    const altExt = destExt === 'png' ? 'jpg' : 'png'
-    const altPath = join(cacheDir, `${id}.${altExt}`)
-    if (existsSync(altPath)) try { unlinkSync(altPath) } catch {}
+    const imgBuffer = readFileSync(imagePath)
+    const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
+    setThumbnail(getDb(), id, imgBuffer, mime)
     const ext = trackPath.split('.').pop()?.toLowerCase() ?? ''
     if (['mp3', 'm4a', 'flac', 'ogg', 'wav', 'aac'].includes(ext)) {
       try {
-        const imgBuffer = readFileSync(imagePath)
-        const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
         NodeID3.update({ image: { mime, type: { id: 3, name: 'front cover' }, description: 'Cover', imageBuffer: imgBuffer } }, trackPath)
       } catch {}
     }
-    if (libraryCache) {
-      const track = libraryCache.tracks.find(t => t.path === trackPath)
-      if (track) track.coverPath = destPath
-      saveLibraryCache(libraryCache)
-    }
-    return destPath
+    return `nyro-thumb://${id}`
   })
 
-  // library:delete-tracks — delete files from disk and remove from cache
+  // library:delete-tracks — delete files from disk and remove from SQLite
   ipcMain.handle(IPC_CHANNELS.LIBRARY_DELETE_TRACKS, (_event, paths: string[]) => {
-    for (const p of paths) try { unlinkSync(p) } catch {}
-    if (libraryCache) {
-      libraryCache.tracks = libraryCache.tracks.filter(t => !paths.includes(t.path))
-      saveLibraryCache(libraryCache)
+    const db = getDb()
+    for (const p of paths) {
+      try { unlinkSync(p) } catch {}
+      deleteTrackByPath(db, p)
     }
   })
 

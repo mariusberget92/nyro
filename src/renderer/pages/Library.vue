@@ -41,6 +41,7 @@ async function startRename(album: LibraryAlbum, e: Event) {
   renameVal.value = album.name
   renameError.value = ''
   await nextTick()
+  renameInputEl.value?.focus()
   renameInputEl.value?.select()
 }
 
