@@ -5,8 +5,6 @@ import Podcasts from '../pages/Podcasts.vue'
 import Library from '../pages/Library.vue'
 import Playlists from '../pages/Playlists.vue'
 import History from '../pages/History.vue'
-import Equalizer from '../pages/Equalizer.vue'
-
 export default createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -17,6 +15,5 @@ export default createRouter({
     { path: '/library', component: Library },
     { path: '/playlists', component: Playlists },
     { path: '/history', component: History },
-    { path: '/equalizer', component: Equalizer },
   ]
 })

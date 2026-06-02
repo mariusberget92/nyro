@@ -101,9 +101,25 @@ const filteredVideos = computed(() =>
 
 function coverUrl(path?: string) {
   if (!path) return null
-  // nyro-thumb:// and nyro-file:// are already valid Electron protocol URLs
   if (path.startsWith('nyro-thumb://') || path.startsWith('nyro-file://') || path.startsWith('data:')) return path
   return `nyro-file://local?p=${encodeURIComponent(path)}`
+}
+
+// Returns up to 4 unique cover URLs across album tracks.
+// 0 = no art; 1 = single full-bleed; 2-4 = mosaic grid
+const gridCoversCache = new WeakMap<LibraryAlbum, string[]>()
+function gridCovers(album: LibraryAlbum): string[] {
+  if (gridCoversCache.has(album)) return gridCoversCache.get(album)!
+  const seen = new Set<string>()
+  const urls: string[] = []
+  for (const t of album.tracks) {
+    if (!t.coverPath) continue
+    const u = coverUrl(t.coverPath)
+    if (u && !seen.has(u)) { seen.add(u); urls.push(u) }
+    if (urls.length === 4) break
+  }
+  gridCoversCache.set(album, urls)
+  return urls
 }
 
 function playAlbum(album: LibraryAlbum, startIdx = 0) {
@@ -338,10 +354,20 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
             <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(album) }">
               <svg v-if="isAlbumSelected(album)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <div class="card-art" :style="coverUrl(album.coverPath) ? { backgroundImage: `url('${coverUrl(album.coverPath)}')` } : {}">
-              <svg v-if="!album.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-                <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
-              </svg>
+            <div class="card-art">
+              <template v-if="gridCovers(album).length === 1">
+                <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(album)[0]}')` }" />
+              </template>
+              <template v-else-if="gridCovers(album).length >= 2">
+                <div class="art-grid">
+                  <div v-for="(u, gi) in gridCovers(album).slice(0, 4)" :key="gi" class="art-grid-cell" :style="{ backgroundImage: `url('${u}')` }" />
+                </div>
+              </template>
+              <template v-else>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
+                </svg>
+              </template>
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
@@ -409,11 +435,21 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
             <div v-if="selectionMode" class="card-checkbox" :class="{ checked: isAlbumSelected(show) }">
               <svg v-if="isAlbumSelected(show)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <div class="card-art" :style="coverUrl(show.coverPath) ? { backgroundImage: `url('${coverUrl(show.coverPath)}')` } : {}">
-              <svg v-if="!show.coverPath" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
-                <path d="M19 10v2a7 7 0 01-14 0v-2"/>
-              </svg>
+            <div class="card-art">
+              <template v-if="gridCovers(show).length === 1">
+                <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(show)[0]}')` }" />
+              </template>
+              <template v-else-if="gridCovers(show).length >= 2">
+                <div class="art-grid">
+                  <div v-for="(u, gi) in gridCovers(show).slice(0, 4)" :key="gi" class="art-grid-cell" :style="{ backgroundImage: `url('${u}')` }" />
+                </div>
+              </template>
+              <template v-else>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                </svg>
+              </template>
               <div class="card-play-overlay">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
@@ -499,10 +535,20 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
           <!-- Album / Podcast detail -->
           <template v-if="detailAlbum">
             <div class="detail-header">
-              <div class="detail-art" :style="coverUrl(detailAlbum.coverPath) ? { backgroundImage: `url('${coverUrl(detailAlbum.coverPath)}')` } : {}">
-                <svg v-if="!detailAlbum.coverPath" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                  <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
-                </svg>
+              <div class="detail-art">
+                <template v-if="gridCovers(detailAlbum).length === 1">
+                  <div class="art-single" :style="{ backgroundImage: `url('${gridCovers(detailAlbum)[0]}')` }" />
+                </template>
+                <template v-else-if="gridCovers(detailAlbum).length >= 2">
+                  <div class="art-grid">
+                    <div v-for="(u, gi) in gridCovers(detailAlbum).slice(0, 4)" :key="gi" class="art-grid-cell" :style="{ backgroundImage: `url('${u}')` }" />
+                  </div>
+                </template>
+                <template v-else>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <path d="M9 18V5l12-2v13M9 18c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-2c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/>
+                  </svg>
+                </template>
                 <div class="detail-art-overlay" @click.stop="pickCoverForAlbum(detailAlbum, $event)">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
@@ -836,6 +882,15 @@ async function pickCoverForTrack(track: LibraryTrack, e: Event) {
   display: flex; align-items: center; justify-content: center;
   color: var(--tx-faint); position: relative; overflow: hidden;
 }
+.art-single {
+  position: absolute; inset: 0;
+  background: center/cover no-repeat;
+}
+.art-grid {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+}
+.art-grid-cell { background: center/cover no-repeat; }
 .card-play-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.45); opacity: 0; transition: opacity 0.15s;
