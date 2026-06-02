@@ -24,7 +24,7 @@ function walkDir(dir: string, files: string[] = []): string[] {
 }
 
 function sourceFromPath(filePath: string, outputFolder: string): LibraryTrack['source'] {
-  const rel = filePath.replace(outputFolder, '').replace(/\\/g, '/')
+  const rel = (filePath.startsWith(outputFolder) ? filePath.slice(outputFolder.length) : filePath).replace(/\\/g, '/')
   if (rel.includes('/Podcasts/')) return 'podcast'
   const ext = extname(filePath).toLowerCase()
   if (VIDEO_EXTS.has(ext)) return 'video'

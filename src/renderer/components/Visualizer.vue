@@ -54,7 +54,6 @@ function stop()  { cancelAnimationFrame(raf); const c = canvas.value; if (c) c.g
 
 watch(() => props.playing, v => v ? start() : stop(), { immediate: true })
 
-onMounted(() => { if (props.playing) start() })
 onBeforeUnmount(() => cancelAnimationFrame(raf))
 </script>
 
